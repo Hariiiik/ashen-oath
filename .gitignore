@@ -1,0 +1,21 @@
+# Godot 4 generated files
+.godot/
+.import/
+.export/
+export.cfg
+export_presets.cfg
+*.translation
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local secrets and generated artifacts
+.env
+.env.*
+!.env.example
+build/
+dist/
+logs/
