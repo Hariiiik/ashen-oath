@@ -17,7 +17,10 @@ Presentation lives in `scripts/ui/`; no domain or application systems are added.
 The enemy portrait can draw above its decorative frame using an explicit
 z-index. Its stage and artwork ignore mouse input and occupy a separate layout
 region above the board. Replace its geometry with nearest-filtered art later,
-preserving that input boundary. The board uses four provisional GDD tile icons.
+preserving that input boundary. The existing prototype uses legacy Sword, Shield,
+Skull and Heart placeholder icons. These no longer represent the approved MVP
+tile set: Sword, Shield, Herb and Action. Updating those visual placeholders is
+a separate implementation TODO; this documentation change does not alter code.
 Its deterministic static pattern is not a playable board generator.
 
 Remaining work: approved pixel art, visual review in a window, and later binding

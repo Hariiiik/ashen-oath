@@ -1,5 +1,5 @@
 # Ashen Oath — Game Design Document (GDD)
-Version: 0.1 (foundation). Status: **direction approved; individual combat numbers are provisional.**
+Version: 0.2 (approved combat tile design). Status: **rules below are approved where marked; unresolved balance values and future ideas remain provisional.** This document specifies intended behavior, not implemented gameplay.
 
 ## High concept
 A single-player Windows PC grimdark pixel-art roguelite. The player fights monstrous enemies with a turn-based hybrid Match-3 board, class abilities and equipment. Runs are self-contained; future unlocks and a hub may be added later, without being part of the initial MVP.
@@ -34,28 +34,42 @@ A single-player Windows PC grimdark pixel-art roguelite. The player fights monst
 
 **Provisional design decision:** One valid matching swap consumes one player turn. Invalid swaps revert and do not consume a turn. Cascades remain part of the same turn. Explicit ability costs and whether a skill consumes an action remain to be designed. This is a proposal, not a final game rule.
 
-## Tile types (provisional MVP set)
-| Tile | Draft effect | Notes |
-| --- | --- | --- |
-| Sword | Physical damage | Class and equipment modifiers apply |
-| Shield | Block | Used against the announced enemy attack |
-| Skull | Occult damage | Can interact with curses later |
-| Heart | Restore HP | Never exceed max HP |
+## Combat tiles (approved MVP rules)
+The board is 7x7 with exactly four base tile types: **Sword, Shield, Herb, Action**. Skull/Occult and Heart tiles are excluded from the MVP. Do not introduce multiple herb/flower variants or additional base tiles.
 
-**Later candidates:** Blood and Rune resource tiles. Do not include them in the first prototype without a balance reason.
+Match-3 activates the basic tile effect. Match-4/5 activates an immediate special effect; it never creates a special tile requiring another move to activate.
+
+| Tile | Match-3 basic effect | Match-4 | Match-5 |
+| --- | --- | --- | --- |
+| Sword | Physical damage | Immediate critical strike | Immediate critical strike with additional armor penetration; balance provisional |
+| Shield | Temporary Guard | Ward | Ward |
+| Herb | Generate crafting materials, never automatic healing | Immediate special reward not yet finalized | Immediate special reward not yet finalized |
+| Action | Generate Action Points (AP) | Immediate special reward not yet finalized | Immediate special reward not yet finalized |
+
+**Guard and Ward (approved):** Guard expires after the next enemy action. Ward persists until consumed or combat ends. Ward is a finite pool of absorbable damage, not permanent defense. Amounts and the order in which Guard and Ward absorb damage remain balance decisions.
+
+**Action Points (approved):** AP is a shared resource for consumables and class abilities. AP does not grant additional board swaps. AP generation amounts, limits and action costs remain provisional.
+
+### Herb collection, crafting and healing (approved rules)
+- Herb materials persist throughout the current run.
+- Each encounter has a finite herb collection budget. Once exhausted, herb matches still resolve normally but produce no more materials. Herb tiles remain on the board.
+- Craft primarily between battles at normal material cost. Emergency crafting is allowed in combat at increased material cost.
+- Healing items are activated manually and consume AP. Herb matches never heal automatically.
+- The intended first healing item is **Bandage**: craft for **4 herbs between battles** or **6 herbs during battle**. These are the approved starting recipe costs; healing amount and activation AP cost remain provisional.
+- An additional AP cost for emergency crafting is only a balance proposal, not approved. Do not confuse it with the approved AP cost for manually activating a healing item.
+- Herb budget size, material yield and Match-4/5 rewards for Herb and Action remain unresolved. Do not invent these rewards.
 
 ### Match rules (provisional)
 - Match 3+ horizontally or vertically; swap must create at least one match.
-- Four/five matches and chain cascades can gain bonuses, after basic combat is fun.
+- Match-3 and immediate Match-4/5 effects follow the approved rules above. Additional cascade bonuses remain a future idea.
 - Initial board should not start with accidental matches and should offer at least one legal move; reshuffle if stuck.
 - Damage is integer based, with explicitly documented order of modifiers.
 - Board state and random seed should be reproducible for tests.
 
-## Classes (future after the first combat slice)
-- **Warden** — defense, shields, counterattacks; first playable class.
-- **Heretic** — skulls, curses, life drain.
-- **Reaver** — swords, bleed and risk/reward.
-Implement only Warden in the first vertical slice.
+## Classes
+**Approved MVP:** Warden is the only playable class. Its defensive direction does not approve specific abilities or counterattack mechanics.
+
+**Future ideas only:** Heretic (curses/life drain) and Reaver (bleed/risk and reward). Future classes do not authorize Skull/Occult tiles in the MVP. Keep class definitions extensible without implementing additional classes now.
 
 ## Equipment (future)
 - Potential slots: weapon, armor, helmet, amulet, two rings.
@@ -64,22 +78,25 @@ Implement only Warden in the first vertical slice.
 - Rarity and curses are concepts, not final balance specifications.
 
 ## Run loop (later milestone)
-Choose class → enter run → select room → battle/event/reward → next room/boss → death/completion → unlocks → new run.
+Enter run as Warden → select room → battle/event/reward → next room/boss → death/completion → unlocks → new run. Class selection is a future extension when additional classes are approved.
 
 ## Scope boundaries
 ### First playable slice
 - One hero (Warden), one enemy, a 7x7 board.
-- Four base tiles, legal swap, match resolution, fall/refill, cascades.
-- HP, block, enemy intent, alternating turns, win/lose.
+- Exactly Sword, Shield, Herb and Action tiles; legal swap, match resolution, fall/refill, cascades.
+- HP, Guard/Ward, AP, enemy intent, alternating turns, win/lose; tile effects follow the approved rules above, with unresolved balance left open.
 - Placeholder sprites are acceptable until combat loop is fun.
 
 ### Explicitly out of scope initially
-- Hub UI and NPCs, crafting, multiplayer, procedural overworld, multiple bosses, loot sets, complex meta-progression, elaborate skill trees.
+- Hub UI and NPCs, additional classes, multiplayer, procedural overworld, multiple bosses, loot sets, complex meta-progression, elaborate skill trees.
+- Crafting rules above are approved design for later implementation; do not build crafting, loot, additional classes or a Hub in the current documentation/UI work. Preserve architecture extension points only.
+- Fatigue is not part of the MVP. It is a possible anti-stalling mechanic for later testing, not an approved rule.
 
 ## Open decisions
-- Damage/block values, starting HP, enemy balance.
-- Whether special matches create power tiles.
-- Skill timings/costs; status effects and durations.
+- Damage, critical multipliers, armor penetration balance, Guard/Ward amounts and absorption order, starting HP, enemy balance.
+- Herb yields and encounter collection budgets; immediate Match-4/5 rewards for Herb and Action.
+- AP generation/limits, ability costs/timings and whether a skill consumes an action; healing amount and activation AP cost for Bandage.
+- Additional AP cost for emergency crafting is a proposal only. Other status effects and durations remain open; Guard/Ward expiry is approved above.
 - Exact equipment slots and reward choices.
 - Pixel-art palette and UI spacing after first visual mockup.
 All undecided items are proposals: seek approval before implementing major new mechanics.

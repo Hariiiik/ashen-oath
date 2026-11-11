@@ -29,18 +29,20 @@ scripts/characters/class_definition.gd
 ```
 
 ## Core models
-- `BoardModel`: grid dimensions, tile enum/ids and seedable RNG, no Godot UI references.
-- `CombatState`: hero HP/block/stats, enemy HP/stats/intent, turn phase, board state, temporary effects.
-- `CombatRules`: integer formulas, effect order, damage/healing/block caps.
-- `RunState` (later): seed, map progress, rewards, unlocks; no hub assumption.
+- `BoardModel`: 7x7 grid, exactly Sword/Shield/Herb/Action base tile ids and seedable RNG, no Godot UI references. Match-4/5 effects resolve immediately, without deferred special tiles.
+- `CombatState`: hero HP/stats, temporary Guard (expires after the next enemy action), finite Ward pool (until consumed or combat ends), shared consumable/ability AP, enemy HP/stats/intent, turn phase, board state and remaining encounter herb budget. AP never grants additional swaps.
+- `CombatRules`: integer formulas, effect order, damage/healing/Guard/Ward caps. Herb matches collect materials within the encounter budget, never heal, and keep resolving without materials after exhaustion; Herb tiles stay on the board. Healing item activation is manual and costs AP. Unresolved balance and Herb/Action special rewards stay unspecified.
+- `RunState` (later): seed, map progress, run-persistent herb materials, rewards, unlocks; no hub assumption.
 - `ItemDefinition`/`AbilityDefinition` (later): static content definitions, with separate runtime state for cooldowns/uses.
+
+These are planned boundaries, not instructions to implement systems now. Keep definitions extensible for future classes, loot and crafting; the MVP has only Warden. Future crafting should distinguish between-battle and emergency material costs (Bandage: 4/6 herbs respectively), with activation AP cost separate from any proposed crafting AP cost. No crafting AP cost is approved. See the GDD for approved rules and provisional balance. Fatigue is outside the MVP.
 
 ## State and input safety
 States: `PLAYER_INPUT`, `RESOLVING_BOARD`, `RESOLVING_EFFECTS`, `ENEMY_ACTION`, `VICTORY`, `DEFEAT`. All input actions validate phase; do not allow animation callbacks to create extra turns. Mark transitions explicitly.
 
 ## Determinism and testing
 - Seed board generation for replayable tests.
-- Test match detection, board cascades, dead boards, invalid swaps, 3/4/5 tile matches, intent, HP/block calculations.
+- When gameplay is implemented, test match detection, cascades, dead boards, invalid swaps, basic Match-3 and immediate Match-4/5 effects, intent, HP, Guard expiry, Ward consumption/end-of-combat clearing, manual healing/AP use, and herb budget exhaustion without tile removal. Verify run-persistent herbs and that AP cannot buy swaps. Do not encode unresolved rewards or balance as approved behavior.
 - The first automated test suite may use lightweight Godot headless test scripts; add a test framework only if its maintenance is justified.
 - UI smoke test in Godot editor after changes; report explicitly if Godot is not installed.
 
