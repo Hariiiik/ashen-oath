@@ -14,13 +14,34 @@ Readable single-player code, fast iteration, deterministic battle logic, editabl
 `PlayerInput -> CombatController -> BoardModel -> MatchResolver -> CombatEffects -> TurnController -> CombatState -> UI updates`.
 Use signals for significant state changes and direct function calls for clear local dependencies. Avoid a universal event bus for every call.
 
-### Implemented board slice
+### Implemented combat slice
 `scripts/board/board_model.gd` is a seeded, node-independent `RefCounted` model
 covering generation, swaps, grouped matches, gravity/refill, cascades and dead-board
 reshuffling. `try_swap()` returns structured per-cascade snapshots and deduplicated
-match groups. `scripts/ui/combat_screen.gd` requests swaps, locks input during
-playback and emits `board_resolved(result)`. This slice has no combat controller or
-tile combat effects; the broader flow above remains planned.
+match groups. The board engine remains independent from combat.
+
+`scripts/combat/combat_controller.gd` owns the board and combat state, accepts swaps
+only during `PLAYER_INPUT`, advances one cascade step at a time and gates enemy
+actions. `combat_rules.gd` applies prototype effects and damage absorption;
+`combat_state.gd` owns encounter HP, Guard/Ward, AP, herb budget, phase, turn and
+intent. `run_inventory.gd` stores herbs in memory; passing the same inventory to
+another controller retains them without a run system or persistence service.
+
+Groups resolve in row-major order by their first cell. Each deduplicated group
+receives one effect using its longest straight run. All groups within a step
+resolve before checking victory; a lethal step prevents later cascade effects
+and enemy retaliation. The existing board engine precomputes refill snapshots;
+unused snapshots after victory have no combat effects. Guard absorbs before Ward,
+then HP; remaining Guard expires after an enemy action, and Ward clears on either
+combat outcome. Enemy intent alternates 5/8, starting at 5.
+
+`scripts/ui/combat_screen.gd` requests swaps and step progression, presents live
+state, locks input during playback/enemy actions and permanently disables the
+board on victory/defeat. `board_resolved(result)` remains a presentation-completion
+signal and must not be used to apply the effects a second time. No crafting,
+items, abilities, equipment modifiers or full run controller are implemented.
+Prototype constants and launch/test commands are in `COMBAT_UI_PROTOTYPE.md`;
+these testing values do not finalize the GDD's open balance decisions.
 
 ## Suggested future files (do not generate empty scripts for all of these)
 ```

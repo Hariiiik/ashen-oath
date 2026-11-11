@@ -1,14 +1,26 @@
 extends Control
-## Board interaction and presentation; combat stats and loadout remain fixtures.
+## Combat presentation only. Rules and turn transitions belong to the controller.
 
 const TILE_SCENE: PackedScene = preload("res://scenes/ui/board_tile.tscn")
 const PORTRAIT = preload("res://scripts/ui/placeholder_portrait.gd")
 const BOARD = preload("res://scripts/board/board_model.gd")
+const COMBAT = preload("res://scripts/combat/combat_controller.gd")
+const STATE = preload("res://scripts/combat/combat_state.gd")
 signal board_resolved(result: BOARD.SwapResult)
 @export var board_seed: int = 1
 var feedback: Label
 var turn_label: Label
 var board: BOARD
+var combat: COMBAT
+var hero_hp_label: Label
+var hero_hp_bar: ProgressBar
+var enemy_hp_label: Label
+var enemy_hp_bar: ProgressBar
+var defense_label: Label
+var intent_label: Label
+var ap_label: Label
+var herbs_label: Label
+var budget_label: Label
 var tiles: Array[Button] = []
 var selected: int = -1
 var resolving: bool = false
@@ -16,7 +28,8 @@ var moves: int = 0
 
 
 func _ready() -> void:
-	board = BOARD.new(board_seed)
+	combat = COMBAT.new(board_seed)
+	board = combat.board
 	theme = _make_theme()
 	var background := ColorRect.new()
 	background.color = Color("101116")
@@ -26,6 +39,7 @@ func _ready() -> void:
 	_build_hero(_column(0.0, 0.2))
 	_build_center(_column(0.2, 0.8))
 	_build_loadout(_column(0.8, 1.0))
+	_sync_state()
 
 
 func _style(fill: String, border: String) -> StyleBoxFlat:
@@ -80,13 +94,12 @@ func _label(parent: Node, copy: String, font_size: int = 16) -> Label:
 	return label
 
 
-func _health(parent: Node, caption: String, amount: float) -> void:
-	_label(parent, caption)
+func _health(parent: Node) -> ProgressBar:
 	var bar := ProgressBar.new()
 	bar.custom_minimum_size.y = 18
-	bar.value = amount
 	bar.show_percentage = false
 	parent.add_child(bar)
+	return bar
 
 
 func _portrait(parent: Node, is_enemy: bool, height: float) -> Control:
@@ -112,16 +125,17 @@ func _build_hero(column: VBoxContainer) -> void:
 	_portrait(column, false, 172)
 	_label(column, "Ser Aldric", 24)
 	_label(column, "WARDEN  /  LEVEL 01")
-	_health(column, "HP  80 / 100", 80)
-	_label(column, "ATK  12     DEF  08", 18)
+	hero_hp_label = _label(column, "")
+	hero_hp_bar = _health(column)
+	defense_label = _label(column, "", 18)
 	column.add_child(HSeparator.new())
 	_label(column, "STATUS EFFECTS")
 	_placeholder(column, "—   —   —")
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(spacer)
-	_label(column, "Combat UI prototype", 14)
-	_label(column, "All values are illustrative", 13)
+	_label(column, "Core combat prototype", 14)
+	_label(column, "Balance values are provisional", 13)
 
 
 func _build_center(column: VBoxContainer) -> void:
@@ -134,8 +148,9 @@ func _build_center(column: VBoxContainer) -> void:
 	column.add_child(stage)
 	var portrait := _portrait(stage, true, 100)
 	portrait.z_index = 1
-	_health(column, "THE HOLLOW SENTINEL   /   HP 120 / 120", 100)
-	_label(column, "INTENT  /  Heavy strike  •  Preview only", 16)
+	enemy_hp_label = _label(column, "")
+	enemy_hp_bar = _health(column)
+	intent_label = _label(column, "", 16)
 	var center := CenterContainer.new()
 	column.add_child(center)
 	var grid := GridContainer.new()
@@ -157,7 +172,7 @@ func _build_center(column: VBoxContainer) -> void:
 
 
 func _on_tile_pressed(index: int) -> void:
-	if resolving:
+	if resolving or combat.state.phase != STATE.Phase.PLAYER_INPUT:
 		return
 	if selected == index:
 		selected = -1
@@ -186,29 +201,62 @@ func _on_tile_pressed(index: int) -> void:
 	preview[index] = before[a.y * 7 + a.x]
 	_refresh(preview)
 	await get_tree().create_timer(0.15).timeout
-	var result: BOARD.SwapResult = board.try_swap(a, b)
+	var result: BOARD.SwapResult = combat.begin_swap(a, b)
 	if not result.valid:
 		feedback.text = "No match. Swap reverted; no move spent."
 	else:
-		moves += 1
+		moves = combat.state.valid_swaps
 		for step: BOARD.CascadeStep in result.steps:
-			var ranks: PackedStringArray = []
-			for group: BOARD.MatchGroup in step.matches:
-				ranks.append("Match-%s" % ("5+" if group.rank == 5 else str(group.rank)))
-			feedback.text = "Cascade %d  /  %s  /  %d tiles" % [step.index + 1, ", ".join(ranks), step.removed.size()]
+			var reports: Array[Dictionary] = combat.resolve_next_step()
+			var effects: PackedStringArray = []
+			for report: Dictionary in reports:
+				var effect: String = ["damage", "Guard" if report.rank == 3 else "Ward", "herbs", "AP"][report.tile]
+				effects.append("M%d: +%d %s" % [report.rank, report.amount, effect])
+			feedback.text = "Cascade %d / %s" % [step.index + 1, ", ".join(effects)]
 			feedback.tooltip_text = feedback.text
+			_sync_state()
 			_refresh(step.cleared)
+			if combat.state.is_finished():
+				break
 			await get_tree().create_timer(0.22).timeout
 			_refresh(step.refilled)
 			await get_tree().create_timer(0.22).timeout
-		if result.reshuffled:
+		if result.reshuffled and not combat.state.is_finished():
 			feedback.text = "No legal moves remained. Board reshuffled."
-		turn_label.text = "BOARD MOVE %02d  /  %d CASCADE STEPS" % [moves, result.steps.size()]
+		combat.finish_player_resolution()
+		if combat.state.phase == STATE.Phase.ENEMY_ACTION:
+			_sync_state()
+			feedback.text = "Enemy attacks for %d." % combat.state.enemy_intent
+			await get_tree().create_timer(0.35).timeout
+			var attack: Dictionary = combat.execute_enemy_action()
+			feedback.text = "Enemy: %d damage / Guard %d / Ward %d / HP -%d" % [attack.damage, attack.guard, attack.ward, attack.hp]
 	_refresh(result.final_cells)
 	for tile: Button in tiles:
-		tile.disabled = false
+		tile.disabled = combat.state.phase != STATE.Phase.PLAYER_INPUT
 	resolving = false
+	_sync_state()
+	if combat.state.phase == STATE.Phase.VICTORY:
+		feedback.text = "VICTORY — The Hollow Sentinel has fallen. F6 to play again."
+	elif combat.state.phase == STATE.Phase.DEFEAT:
+		feedback.text = "DEFEAT — Your oath ends here. F6 to try again."
+	feedback.tooltip_text = feedback.text
 	board_resolved.emit(result)
+
+
+func _sync_state() -> void:
+	var state: STATE = combat.state
+	hero_hp_label.text = "HP  %d / %d" % [state.player_hp, state.player_max_hp]
+	hero_hp_bar.max_value = state.player_max_hp
+	hero_hp_bar.value = state.player_hp
+	enemy_hp_label.text = "THE HOLLOW SENTINEL / HP %d / %d" % [state.enemy_hp, state.enemy_max_hp]
+	enemy_hp_bar.max_value = state.enemy_max_hp
+	enemy_hp_bar.value = state.enemy_hp
+	defense_label.text = "GUARD %d   /   WARD %d" % [state.guard, state.ward]
+	ap_label.text = "AP  %d / 6" % state.ap
+	herbs_label.text = "Run herbs  %d" % state.run_inventory.herbs
+	budget_label.text = "Herb budget left  %d" % state.herb_budget
+	intent_label.text = "INTENT / Attack for %d damage" % state.enemy_intent if not state.is_finished() else "INTENT / Combat ended"
+	turn_label.text = "TURN %02d / %s" % [state.turn, STATE.Phase.keys()[state.phase].replace("_", " ")]
 
 
 func _refresh(values: Array[int]) -> void:
@@ -228,5 +276,7 @@ func _build_loadout(column: VBoxContainer) -> void:
 	_placeholder(column, "Ability slot II   /   Locked")
 	column.add_child(HSeparator.new())
 	_label(column, "RESOURCES", 18)
-	_label(column, "Gold   —     /     Charges   —")
+	ap_label = _label(column, "")
+	herbs_label = _label(column, "")
+	budget_label = _label(column, "")
 	_label(column, "Loadout preview only", 14)

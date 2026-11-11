@@ -1,6 +1,8 @@
 extends SceneTree
 ## Run: godot --headless --path . --script tests/combat_ui_smoke.gd
 const Board = preload("res://scripts/board/board_model.gd")
+const Combat = preload("res://scripts/combat/combat_controller.gd")
+const State = preload("res://scripts/combat/combat_state.gd")
 
 
 func _initialize() -> void:
@@ -71,6 +73,53 @@ func _verify() -> void:
 	assert(model.find_matches().is_empty() and model.has_legal_move())
 	for i: int in range(49):
 		assert(not buttons[i].disabled and buttons[i].get("tile_kind") == model.cells[i])
-	print("PASS: layout, selection, rollback, valid swap, input lock, and model/view synchronization.")
+	var combat: Combat = screen.get("combat")
+	assert(combat.state.turn == 2 and combat.state.enemy_actions == 1 and combat.state.enemy_intent == 8)
+	assert(screen.get("hero_hp_bar").value == combat.state.player_hp)
+	assert(screen.get("enemy_hp_bar").value == combat.state.enemy_hp)
+	assert("8 damage" in screen.get("intent_label").text)
+	assert(str(combat.state.ap) in screen.get("ap_label").text)
+	# Guaranteed Sword swap for victory; all terminal input remains disabled.
+	for y: int in range(7):
+		for x: int in range(7):
+			model.cells[y * 7 + x] = (x + y) % 4
+	model.cells[2] = 0
+	model.cells[8] = 0
+	screen.call("_refresh", model.cells)
+	combat.state.enemy_hp = 1
+	buttons[1].pressed.emit()
+	buttons[8].pressed.emit()
+	while screen.get("resolving"):
+		await process_frame
+	assert(combat.state.phase == State.Phase.VICTORY and combat.state.enemy_actions == 1)
+	assert("VICTORY" in feedback.text and screen.get("enemy_hp_bar").value == 0)
+	for button: Button in buttons:
+		assert(button.disabled)
+	buttons[0].pressed.emit()
+	assert(screen.get("selected") == -1)
+	screen.queue_free()
+	await process_frame
+	# Separate encounter exercises the actual UI enemy action -> defeat path.
+	screen = scene.instantiate() as Control
+	root.add_child(screen)
+	await process_frame
+	combat = screen.get("combat")
+	combat.state.player_hp = 1
+	combat.state.enemy_hp = 1000
+	combat.state.enemy_max_hp = 1000
+	combat.state.enemy_intent = 1000
+	buttons = screen.get("tiles")
+	move = combat.board.legal_moves()[0]
+	buttons[move.y * 7 + move.x].pressed.emit()
+	buttons[move.w * 7 + move.z].pressed.emit()
+	while screen.get("resolving"):
+		await process_frame
+	assert(combat.state.phase == State.Phase.DEFEAT)
+	assert("DEFEAT" in screen.get("feedback").text and screen.get("hero_hp_bar").value == 0)
+	for button: Button in buttons:
+		assert(button.disabled)
+	buttons[0].pressed.emit()
+	assert(screen.get("selected") == -1)
+	print("PASS: layout, swaps, input lock, live combat UI, retaliation, victory and defeat.")
 	screen.queue_free()
 	quit()
