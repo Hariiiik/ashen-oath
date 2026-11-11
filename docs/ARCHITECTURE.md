@@ -14,6 +14,14 @@ Readable single-player code, fast iteration, deterministic battle logic, editabl
 `PlayerInput -> CombatController -> BoardModel -> MatchResolver -> CombatEffects -> TurnController -> CombatState -> UI updates`.
 Use signals for significant state changes and direct function calls for clear local dependencies. Avoid a universal event bus for every call.
 
+### Implemented board slice
+`scripts/board/board_model.gd` is a seeded, node-independent `RefCounted` model
+covering generation, swaps, grouped matches, gravity/refill, cascades and dead-board
+reshuffling. `try_swap()` returns structured per-cascade snapshots and deduplicated
+match groups. `scripts/ui/combat_screen.gd` requests swaps, locks input during
+playback and emits `board_resolved(result)`. This slice has no combat controller or
+tile combat effects; the broader flow above remains planned.
+
 ## Suggested future files (do not generate empty scripts for all of these)
 ```
 scenes/combat/combat_screen.tscn

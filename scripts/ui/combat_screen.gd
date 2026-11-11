@@ -1,12 +1,22 @@
 extends Control
-## Static UI fixture. No domain models, combat rules, or equipment effects.
+## Board interaction and presentation; combat stats and loadout remain fixtures.
 
 const TILE_SCENE: PackedScene = preload("res://scenes/ui/board_tile.tscn")
 const PORTRAIT = preload("res://scripts/ui/placeholder_portrait.gd")
+const BOARD = preload("res://scripts/board/board_model.gd")
+signal board_resolved(result: BOARD.SwapResult)
+@export var board_seed: int = 1
 var feedback: Label
+var turn_label: Label
+var board: BOARD
+var tiles: Array[Button] = []
+var selected: int = -1
+var resolving: bool = false
+var moves: int = 0
 
 
 func _ready() -> void:
+	board = BOARD.new(board_seed)
 	theme = _make_theme()
 	var background := ColorRect.new()
 	background.color = Color("101116")
@@ -133,22 +143,79 @@ func _build_center(column: VBoxContainer) -> void:
 	grid.add_theme_constant_override("h_separation", 4)
 	grid.add_theme_constant_override("v_separation", 4)
 	center.add_child(grid)
-	var selection := ButtonGroup.new()
-	selection.allow_unpress = true
 	for row: int in range(7):
 		for col: int in range(7):
 			var tile := TILE_SCENE.instantiate() as Button
-			var kind: int = (row * 3 + col) % 4
-			tile.set("tile_kind", kind)
-			tile.button_group = selection
+			tile.set("tile_kind", board.cells[row * 7 + col])
+			tiles.append(tile)
 			grid.add_child(tile)
-			tile.pressed.connect(_on_tile_pressed.bind(row, col, tile))
-	_label(column, "TURN 01  /  PLAYER PREVIEW", 16)
-	feedback = _label(column, "Select a tile to inspect. Swaps are not enabled.", 14)
+			tile.pressed.connect(_on_tile_pressed.bind(row * 7 + col))
+	turn_label = _label(column, "BOARD MOVE 00  /  SELECT TWO ADJACENT TILES", 16)
+	feedback = _label(column, "Sword / Shield / Herb / Action  •  Seed %d" % board_seed, 14)
+	# Long cascade reports must not push the three columns beyond the viewport.
+	feedback.clip_text = true
 
 
-func _on_tile_pressed(row: int, col: int, tile: Button) -> void:
-	feedback.text = "Tile %d, %d selected. Visual preview only." % [row + 1, col + 1] if tile.button_pressed else "Selection cleared. Visual preview only."
+func _on_tile_pressed(index: int) -> void:
+	if resolving:
+		return
+	if selected == index:
+		selected = -1
+		feedback.text = "Selection cleared."
+		_refresh(board.cells)
+		return
+	if selected < 0:
+		selected = index
+		feedback.text = "%s selected. Choose an adjacent tile." % tiles[index].tooltip_text
+		_refresh(board.cells)
+		return
+	var a := Vector2i(selected % 7, floori(selected / 7.0))
+	var b := Vector2i(index % 7, floori(index / 7.0))
+	if absi(a.x - b.x) + absi(a.y - b.y) != 1:
+		selected = index
+		feedback.text = "Choose a tile directly beside the selected tile."
+		_refresh(board.cells)
+		return
+	selected = -1
+	resolving = true
+	for tile: Button in tiles:
+		tile.disabled = true
+	var before: Array[int] = board.cells.duplicate()
+	var preview: Array[int] = before.duplicate()
+	preview[a.y * 7 + a.x] = before[index]
+	preview[index] = before[a.y * 7 + a.x]
+	_refresh(preview)
+	await get_tree().create_timer(0.15).timeout
+	var result: BOARD.SwapResult = board.try_swap(a, b)
+	if not result.valid:
+		feedback.text = "No match. Swap reverted; no move spent."
+	else:
+		moves += 1
+		for step: BOARD.CascadeStep in result.steps:
+			var ranks: PackedStringArray = []
+			for group: BOARD.MatchGroup in step.matches:
+				ranks.append("Match-%s" % ("5+" if group.rank == 5 else str(group.rank)))
+			feedback.text = "Cascade %d  /  %s  /  %d tiles" % [step.index + 1, ", ".join(ranks), step.removed.size()]
+			feedback.tooltip_text = feedback.text
+			_refresh(step.cleared)
+			await get_tree().create_timer(0.22).timeout
+			_refresh(step.refilled)
+			await get_tree().create_timer(0.22).timeout
+		if result.reshuffled:
+			feedback.text = "No legal moves remained. Board reshuffled."
+		turn_label.text = "BOARD MOVE %02d  /  %d CASCADE STEPS" % [moves, result.steps.size()]
+	_refresh(result.final_cells)
+	for tile: Button in tiles:
+		tile.disabled = false
+	resolving = false
+	board_resolved.emit(result)
+
+
+func _refresh(values: Array[int]) -> void:
+	for i: int in range(tiles.size()):
+		tiles[i].set("tile_kind", values[i])
+		tiles[i].set_pressed_no_signal(i == selected)
+		tiles[i].queue_redraw()
 
 
 func _build_loadout(column: VBoxContainer) -> void:

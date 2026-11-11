@@ -1,8 +1,10 @@
 extends SceneTree
 ## Run: godot --headless --path . --script tests/combat_ui_smoke.gd
+const Board = preload("res://scripts/board/board_model.gd")
 
 
 func _initialize() -> void:
+	create_timer(15.0).timeout.connect(func() -> void: quit(1))
 	call_deferred("_verify")
 
 
@@ -32,6 +34,43 @@ func _verify() -> void:
 	assert(count == 49, "Expected 49 selectable tiles")
 	var feedback := screen.get("feedback") as Label
 	assert(feedback.get_global_rect().end.y <= 720, "Feedback clipped")
-	print("PASS: 49 tiles fit; board below enemy; selection feedback works.")
+	var model: Board = screen.get("board")
+	var buttons: Array = screen.get("tiles")
+	var old: Array[int] = model.cells.duplicate()
+	# Re-click deselects; distant click changes selection without a swap.
+	buttons[0].pressed.emit()
+	assert(screen.get("selected") == -1)
+	buttons[0].pressed.emit()
+	buttons[48].pressed.emit()
+	assert(screen.get("selected") == 48 and model.cells == old)
+	buttons[48].pressed.emit()
+	var invalid: Vector4i
+	var found: bool = false
+	for y: int in range(7):
+		for x: int in range(6):
+			if not found and not model.is_valid_swap(Vector2i(x, y), Vector2i(x + 1, y)):
+				invalid = Vector4i(x, y, x + 1, y)
+				found = true
+	buttons[invalid.y * 7 + invalid.x].pressed.emit()
+	buttons[invalid.w * 7 + invalid.z].pressed.emit()
+	assert(screen.get("resolving"))
+	while screen.get("resolving"):
+		await process_frame
+	assert(model.cells == old and screen.get("moves") == 0, "Invalid swap spends no move")
+	var move: Vector4i = model.legal_moves()[0]
+	buttons[move.y * 7 + move.x].pressed.emit()
+	buttons[move.w * 7 + move.z].pressed.emit()
+	assert(screen.get("resolving"))
+	for button: Button in buttons:
+		assert(button.disabled, "All tiles disabled during resolution")
+	buttons[0].pressed.emit()
+	assert(screen.get("selected") == -1, "Handler also rejects input while resolving")
+	while screen.get("resolving"):
+		await process_frame
+	assert(screen.get("moves") == 1, "Valid move counted once including cascades")
+	assert(model.find_matches().is_empty() and model.has_legal_move())
+	for i: int in range(49):
+		assert(not buttons[i].disabled and buttons[i].get("tile_kind") == model.cells[i])
+	print("PASS: layout, selection, rollback, valid swap, input lock, and model/view synchronization.")
 	screen.queue_free()
 	quit()
