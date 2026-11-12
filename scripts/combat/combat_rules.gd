@@ -1,12 +1,30 @@
 extends RefCounted
-## Pure prototype calculations. No UI, animation, equipment or ability logic.
+## Combat calculations and ability validation, independent from UI/animation.
 const Board = preload("res://scripts/board/board_model.gd")
 const State = preload("res://scripts/combat/combat_state.gd")
 const AP_CAP: int = 6
+const SHIELD_BASH_AP_COST: int = 3
 const SWORD: Array[int] = [6, 12, 18]
 const SHIELD: Array[int] = [6, 8, 12]
 const HERB: Array[int] = [1, 2, 3]
 const ACTION: Array[int] = [2, 3, 5]
+
+
+static func can_shield_bash(state: State) -> bool:
+	return state.phase in [State.Phase.PLAYER_INPUT, State.Phase.POST_MATCH] and state.guard > 0 and state.ap >= SHIELD_BASH_AP_COST
+
+
+static func shield_bash(state: State) -> Dictionary:
+	if not can_shield_bash(state):
+		return {"valid": false}
+	var consumed: int = state.guard
+	state.ap -= SHIELD_BASH_AP_COST
+	state.guard = 0
+	# Same physical mitigation as ordinary Sword damage; no armor penetration.
+	var damage: int = maxi(0, consumed - state.enemy_armor)
+	var hp_lost: int = mini(state.enemy_hp, damage)
+	state.enemy_hp -= hp_lost
+	return {"valid": true, "guard_consumed": consumed, "damage": damage, "hp_lost": hp_lost}
 
 
 static func apply_match(state: State, group: Board.MatchGroup) -> Dictionary:

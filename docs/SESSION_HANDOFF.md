@@ -1,6 +1,137 @@
 # Ashen Oath — Session handoff
 
-Prepared: 2026-11-11, after Sprint 04 (core combat).
+## Interim update — 2026-11-13
+
+This update is the current checkpoint. The 2026-11-11 snapshot below is retained
+as historical context; its Git checkpoint, geometric-only tile description and
+pending roadmap audit are superseded by this update.
+
+### Repository checkpoint and scope of this update
+
+- Current HEAD: `dcf3a4e` — `grafics: art implementation + resolution channges`.
+  Previous checkpoints: `0e1dbdc` (Forest / Rust / Iron documentation), `092e948`
+  (core combat), `16af194` (playable board).
+- Working tree was clean at the start of this review. The recent art integration
+  and UI presentation refactor are already committed; they are not pending changes.
+- This task changes only `docs/DEVELOPMENT_ROADMAP.md` and this handoff. No code,
+  assets, scenes, settings, other documentation or commits are changed.
+- Git status/diff and implementation files were reviewed locally. No fetch,
+  remote visibility check or network operation was performed.
+
+### Current state and milestone review
+
+| Milestone | Status | Remaining boundary |
+| --- | --- | --- |
+| 0 — Foundation | Project foundation complete | Private remote visibility/push setup and local login not independently verified |
+| 1 — Board prototype | Implemented and tested | Prototype visuals remain replaceable |
+| 2 — Complete battle | Minimal encounter implemented and tested | Final balance and some special rewards remain open |
+| 3 — Combat UI | Static/presentation slice implemented and validated | Manual acceptance, final assets and animation/polish pending |
+| 4 — Light RPG | Not implemented | Abilities, equipment effects and data-driven RPG content need separate tasks |
+| 5 — Simple run | Not implemented | No rooms, rewards, run orchestration or saves |
+
+The roadmap now has explicit status/checklist entries. It distinguishes
+implemented prototype behavior from final design approval and unverified setup.
+
+### Completed since the original handoff
+
+- Established the approved Forest / Rust / Iron overall direction and starting
+  palette in `docs/ART_DIRECTION.md`; the GDD references it and the earlier art
+  guide defers to it. Individual assets remain unapproved/provisional.
+- Inspected the supplied detailed concept sheet at
+  `docs/references/art/2b4f6a9f-1478-4991-b860-9fb40c006a7f.png`. The art direction
+  document records the intended canonical filename and the supplied filename;
+  reference-image captions do not override gameplay rules.
+- Integrated `assets/tiles/sword.png`, `shield.png`, `herb.png`, `action.png`
+  through exported texture assignments in `scenes/ui/board_tile.tscn`.
+  Nearest filtering, square sizing, selection and empty-cell rendering are kept.
+- Refactored static combat presentation without changing board/combat algorithms:
+  three 20/60/20 zones; enlarged hero portrait; compact status/equipment tooltips;
+  reserved ability and consumable areas; scrollable inventory with live herbs.
+- Added a reusable EnemyStage for 1–3 visual slots. Only its primary slot binds
+  the existing single enemy. There are no extra combat actors or targeting rules.
+- Reserved 80px between the enemy stage and board. Tiles measure 52px at logical
+  1280x720 (388px board) and 94px at logical 1920x1080 (682px board). Hero portrait
+  height is 320px/480px respectively. These are layout results, not asset specs.
+- Added segmented AP presentation: muted yellow/olive palette, required-segment
+  highlights and explicit insufficient-AP feedback. Reserved button costs of
+  2/4 AP are UI-only examples, not implemented abilities or approved costs.
+- Added decorative iron defense plates, Guard chain patches and translucent Ward
+  overlays. No Armor resource exists. Overlay segments each represent up to six
+  points and saturate visually above 36; exact values remain in labels/tooltips.
+- Inventory accepts view dictionaries and updates stack counts. This provides
+  future item presentation without implementing loot, crafting or item usage.
+
+### Latest recorded verification
+
+These results are from the preceding implementation work, not rerun for this
+documentation-only audit, which must leave all other files untouched:
+
+- Board: **1,151 checks, 0 failures**.
+- Combat: **582 checks, 0 failures**; default test encounter won in four legal
+  swaps with 100 HP using a test-only move search. This is not balance approval.
+- Presentation: **354 checks, 0 failures** at 1280x720 and 1920x1080, including
+  all 49 unobstructed pointer targets, stage capacity, AP previews, defense,
+  inventory scrolling and quantities.
+- Combat UI smoke test passed swaps/rollback, phase input locks, state bindings,
+  retaliation, victory and defeat.
+- Godot 4.7.2 editor validation and OpenGL rendered capture runs passed. Rendered
+  captures were produced at both resolutions; the reference-size capture was
+  visually inspected after the final spacing adjustment. Full manual player
+  playtesting remains outstanding. Captures are ignored `.godot/ui_*.png` files.
+- Documentation audit: `git diff --check` is the appropriate check; no Godot
+  invocation is required for these two Markdown changes.
+
+Test commands remain those below, with the additional UI suite:
+`godot --headless --path . --script tests/presentation_smoke.gd`.
+
+### Important recent files
+
+- `scripts/ui/combat_screen.gd`: presentation composition, responsive sizing and
+  existing live state adapter; combat turn-resolution behavior is preserved.
+- `scripts/ui/enemy_stage.gd`, `segmented_meter.gd`, `inventory_grid.gd`: modular,
+  read-only presentation components with companion UID files.
+- `scripts/ui/placeholder_portrait.gd`: scalable native silhouette placeholder.
+- `scripts/ui/board_tile.gd`, `scenes/ui/board_tile.tscn`: replaceable PNG rendering.
+- `assets/tiles/*.png` and import sidecars: provisional supplied tile art.
+- `tests/presentation_smoke.gd`, `tests/combat_ui_smoke.gd`: presentation and
+  combat integration coverage. Existing board/combat tests remain in place.
+- `docs/COMBAT_UI_PROTOTYPE.md`: current layout/components, caveats and commands.
+- `docs/ART_DIRECTION.md`, `docs/ART_STYLE_GUIDE.md`, `docs/GAME_DESIGN.md`:
+  visual direction and distinction between approved rules and prototype values.
+
+### Decisions, pending work and next action
+
+All approved rules and Sprint 04 prototype constants recorded below remain in
+effect. No mechanics were added by the art/UI work. In particular, herbs never
+heal automatically, AP never buys board swaps, and Ward is finite absorption.
+
+1. Manually playtest the combat scene with **F6** at 1280x720 and a larger 16:9
+   window. Check selection, AP hover/focus clarity, tooltips, scrolling, live herb
+   stacks, enemy/board separation, feedback and victory/defeat input locks.
+2. Record concrete findings and agree on a narrowly scoped next implementation
+   task. Do not infer permission for abilities or multi-enemy combat from slots.
+3. The next planned art task is individual design/approval of the four tiles,
+   followed by set consistency review. Existing PNGs are provisional integration
+   assets, not final designs. Character/enemy/UI art, typography, production asset
+   specifications and animation requirements still need approval.
+4. Final balance remains open, particularly Herb/Action special rewards, hero HP,
+   budget, AP limits, damage and future item/ability costs. The GDD's open decisions
+   must not be silently finalized from implementation constants.
+5. AP/herbs cannot yet be spent. There is no in-game restart, save system or full
+   run flow. A shared inventory object can retain herbs across future encounters,
+   but current scene restart creates a fresh inventory. Equipment/consumable slots
+   and additional enemy cards are presentation only. Fatigue/Hub stay outside MVP.
+6. README foundation text remains stale; it was deliberately left unchanged under
+   this task's two-file scope. Remote privacy/login verification is optional setup
+   follow-up and was not claimed complete from local Git references alone.
+
+No commits are made by this handoff. At completion, only the roadmap and handoff
+should be uncommitted changes; preserve that boundary before the next task.
+
+## Historical snapshot — 2026-11-11, after Sprint 04
+
+The sections below preserve the earlier context and prototype decisions. For
+current implementation, verification and next steps, use the interim update above.
 
 ## Current project state
 

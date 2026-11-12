@@ -68,7 +68,7 @@ func _verify() -> void:
 		_check(screen.inventory.get_v_scroll_bar().max_value > screen.inventory.size.y, "Inventory scrolls when entries exceed available space")
 		var initial_ap: int = screen.combat.state.ap
 		screen.ability_previews[0].mouse_entered.emit()
-		_check(screen.ap_meter.preview_cost == 2 and "insufficient" in screen.ap_label.text, "Insufficient AP preview")
+		_check(screen.ap_meter.preview_cost == 3 and "insufficient" in screen.ap_label.text, "Insufficient AP preview")
 		screen.ability_previews[0].pressed.emit()
 		_check(screen.combat.state.ap == initial_ap, "Hover/click preview spends no AP")
 		screen.ability_previews[0].mouse_exited.emit()

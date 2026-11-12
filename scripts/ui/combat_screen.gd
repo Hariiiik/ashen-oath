@@ -6,6 +6,7 @@ const PORTRAIT = preload("res://scripts/ui/placeholder_portrait.gd")
 const BOARD = preload("res://scripts/board/board_model.gd")
 const COMBAT = preload("res://scripts/combat/combat_controller.gd")
 const STATE = preload("res://scripts/combat/combat_state.gd")
+const RULES = preload("res://scripts/combat/combat_rules.gd")
 const ENEMY_STAGE = preload("res://scripts/ui/enemy_stage.gd")
 const METER = preload("res://scripts/ui/segmented_meter.gd")
 const INVENTORY = preload("res://scripts/ui/inventory_grid.gd")
@@ -39,6 +40,8 @@ var art_clearance: Control
 var center_column: VBoxContainer
 var ability_previews: Array[Button] = []
 var status_icons: Array[Button] = []
+var shield_bash_button: Button
+var end_turn_button: Button
 
 
 func _ready() -> void:
@@ -236,7 +239,7 @@ func _preview_ap(cost: int) -> void:
 		else:
 			ap_label.text += " / cost %d" % cost
 	ap_label.modulate = Color("A1693D") if cost > combat.state.ap else Color.WHITE
-	ap_meter.tooltip_text = "Insufficient AP: need %d, have %d. Cost preview only." % [cost, combat.state.ap] if cost > combat.state.ap else "Shared AP for future abilities and items."
+	ap_meter.tooltip_text = "Insufficient AP: need %d, have %d." % [cost, combat.state.ap] if cost > combat.state.ap else "Shared AP for abilities and future items."
 
 
 func _on_tile_pressed(index: int) -> void:
@@ -261,6 +264,7 @@ func _on_tile_pressed(index: int) -> void:
 		return
 	selected = -1
 	resolving = true
+	_sync_action_availability()
 	for tile: Button in tiles:
 		tile.disabled = true
 	var before: Array[int] = board.cells.duplicate()
@@ -292,12 +296,8 @@ func _on_tile_pressed(index: int) -> void:
 		if result.reshuffled and not combat.state.is_finished():
 			feedback.text = "No legal moves remained. Board reshuffled."
 		combat.finish_player_resolution()
-		if combat.state.phase == STATE.Phase.ENEMY_ACTION:
-			_sync_state()
-			feedback.text = "Enemy attacks for %d." % combat.state.enemy_intent
-			await get_tree().create_timer(0.35).timeout
-			var attack: Dictionary = combat.execute_enemy_action()
-			feedback.text = "Enemy: %d damage / Guard %d / Ward %d / HP -%d" % [attack.damage, attack.guard, attack.ward, attack.hp]
+		if combat.state.phase == STATE.Phase.POST_MATCH:
+			feedback.text = "Swap complete. Use Shield Bash or End Turn."
 	_refresh(result.final_cells)
 	for tile: Button in tiles:
 		tile.disabled = combat.state.phase != STATE.Phase.PLAYER_INPUT
@@ -309,6 +309,44 @@ func _on_tile_pressed(index: int) -> void:
 		feedback.text = "DEFEAT — Your oath ends here. F6 to try again."
 	feedback.tooltip_text = feedback.text
 	board_resolved.emit(result)
+
+
+func _on_shield_bash_pressed() -> void:
+	if resolving:
+		return
+	var report: Dictionary = combat.activate_shield_bash()
+	if not report.valid:
+		return
+	selected = -1
+	_refresh(board.cells)
+	feedback.text = "Shield Bash: %d Guard consumed / %d physical damage." % [report.guard_consumed, report.damage]
+	if combat.state.phase == STATE.Phase.VICTORY:
+		feedback.text += " VICTORY — no retaliation."
+	feedback.tooltip_text = feedback.text
+	_sync_state()
+
+
+func _on_end_turn_pressed() -> void:
+	if resolving or not combat.end_turn():
+		return
+	resolving = true
+	_sync_state()
+	feedback.text = "Enemy attacks for %d." % combat.state.enemy_intent
+	await get_tree().create_timer(0.35).timeout
+	var attack: Dictionary = combat.execute_enemy_action()
+	feedback.text = "Enemy: %d damage / Guard %d / Ward %d / HP -%d" % [attack.damage, attack.guard, attack.ward, attack.hp]
+	if combat.state.phase == STATE.Phase.DEFEAT:
+		feedback.text = "DEFEAT — Your oath ends here. F6 to try again."
+	resolving = false
+	feedback.tooltip_text = feedback.text
+	_sync_state()
+
+
+func _sync_action_availability() -> void:
+	for tile: Button in tiles:
+		tile.disabled = resolving or combat.state.phase != STATE.Phase.PLAYER_INPUT
+	shield_bash_button.disabled = resolving or not combat.can_shield_bash()
+	end_turn_button.disabled = resolving or combat.state.phase != STATE.Phase.POST_MATCH
 
 
 func _sync_state() -> void:
@@ -333,6 +371,7 @@ func _sync_state() -> void:
 	intent_label.text = "Attack for %d damage" % state.enemy_intent if not state.is_finished() else "Combat ended"
 	intent_label.tooltip_text = intent_label.text
 	turn_label.text = "TURN %02d / %s" % [state.turn, STATE.Phase.keys()[state.phase].replace("_", " ")]
+	_sync_action_availability()
 
 
 func _refresh(values: Array[int]) -> void:
@@ -355,17 +394,23 @@ func _build_loadout(column: VBoxContainer) -> void:
 		button.tooltip_text = slot + " — empty equipment slot"
 		equipment.add_child(button)
 	_label(column, "ABILITIES", 16)
-	for cost: int in [2, 4]:
-		var button := Button.new()
-		button.text = "Preview slot / %d AP" % cost
-		button.custom_minimum_size.y = 32
-		button.tooltip_text = "Reserved ability slot. Hover previews %d AP only; cost is not approved and no action is assigned." % cost
-		button.mouse_entered.connect(_preview_ap.bind(cost))
-		button.mouse_exited.connect(_preview_ap.bind(0))
-		button.focus_entered.connect(_preview_ap.bind(cost))
-		button.focus_exited.connect(_preview_ap.bind(0))
-		column.add_child(button)
-		ability_previews.append(button)
+	shield_bash_button = Button.new()
+	shield_bash_button.text = "Shield Bash / 3 AP"
+	shield_bash_button.custom_minimum_size.y = 32
+	shield_bash_button.tooltip_text = "Consume all Guard to deal equal physical damage. Costs 3 AP."
+	shield_bash_button.mouse_entered.connect(_preview_ap.bind(RULES.SHIELD_BASH_AP_COST))
+	shield_bash_button.mouse_exited.connect(_preview_ap.bind(0))
+	shield_bash_button.focus_entered.connect(_preview_ap.bind(RULES.SHIELD_BASH_AP_COST))
+	shield_bash_button.focus_exited.connect(_preview_ap.bind(0))
+	shield_bash_button.pressed.connect(_on_shield_bash_pressed)
+	column.add_child(shield_bash_button)
+	ability_previews.append(shield_bash_button)
+	_placeholder(column, "Ability II / Locked")
+	end_turn_button = Button.new()
+	end_turn_button.text = "End Turn"
+	end_turn_button.tooltip_text = "After your swap, finish the turn and let the enemy act."
+	end_turn_button.pressed.connect(_on_end_turn_pressed)
+	column.add_child(end_turn_button)
 	_label(column, "CONSUMABLES", 16)
 	_placeholder(column, "Reserved / —")
 	_label(column, "INVENTORY", 16)

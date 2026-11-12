@@ -72,8 +72,13 @@ func _verify() -> void:
 	assert(screen.get("moves") == 1, "Valid move counted once including cascades")
 	assert(model.find_matches().is_empty() and model.has_legal_move())
 	for i: int in range(49):
-		assert(not buttons[i].disabled and buttons[i].get("tile_kind") == model.cells[i])
+		assert(buttons[i].disabled and buttons[i].get("tile_kind") == model.cells[i])
 	var combat: Combat = screen.get("combat")
+	assert(combat.state.phase == State.Phase.POST_MATCH and combat.state.enemy_actions == 0)
+	assert(not screen.get("end_turn_button").disabled)
+	screen.get("end_turn_button").pressed.emit()
+	while screen.get("resolving"):
+		await process_frame
 	assert(combat.state.turn == 2 and combat.state.enemy_actions == 1 and combat.state.enemy_intent == 8)
 	assert(screen.get("hero_hp_bar").value == combat.state.player_hp)
 	assert(screen.get("enemy_hp_bar").value == combat.state.enemy_hp)
@@ -112,6 +117,10 @@ func _verify() -> void:
 	move = combat.board.legal_moves()[0]
 	buttons[move.y * 7 + move.x].pressed.emit()
 	buttons[move.w * 7 + move.z].pressed.emit()
+	while screen.get("resolving"):
+		await process_frame
+	assert(combat.state.phase == State.Phase.POST_MATCH and combat.state.player_hp == 1)
+	screen.get("end_turn_button").pressed.emit()
 	while screen.get("resolving"):
 		await process_frame
 	assert(combat.state.phase == State.Phase.DEFEAT)

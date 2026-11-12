@@ -1,7 +1,7 @@
 extends RefCounted
 
 const Inventory = preload("res://scripts/combat/run_inventory.gd")
-enum Phase { PLAYER_INPUT, RESOLVING_BOARD, RESOLVING_EFFECTS, ENEMY_ACTION, VICTORY, DEFEAT }
+enum Phase { PLAYER_INPUT, RESOLVING_BOARD, RESOLVING_EFFECTS, POST_MATCH, ENEMY_ACTION, VICTORY, DEFEAT }
 
 # Prototype defaults, not approved final balance.
 var player_max_hp: int = 100

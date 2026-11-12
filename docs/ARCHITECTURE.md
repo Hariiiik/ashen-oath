@@ -22,7 +22,9 @@ match groups. The board engine remains independent from combat.
 
 `scripts/combat/combat_controller.gd` owns the board and combat state, accepts swaps
 only during `PLAYER_INPUT`, advances one cascade step at a time and gates enemy
-actions. `combat_rules.gd` applies prototype effects and damage absorption;
+actions. After all steps, `finish_player_resolution()` enters `POST_MATCH`;
+only explicit `end_turn()` opens `ENEMY_ACTION`. No timer advances the decision
+phase. `combat_rules.gd` applies prototype tile effects, Shield Bash and damage absorption;
 `combat_state.gd` owns encounter HP, Guard/Ward, AP, herb budget, phase, turn and
 intent. `run_inventory.gd` stores herbs in memory; passing the same inventory to
 another controller retains them without a run system or persistence service.
@@ -38,8 +40,10 @@ combat outcome. Enemy intent alternates 5/8, starting at 5.
 `scripts/ui/combat_screen.gd` requests swaps and step progression, presents live
 state, locks input during playback/enemy actions and permanently disables the
 board on victory/defeat. `board_resolved(result)` remains a presentation-completion
-signal and must not be used to apply the effects a second time. No crafting,
-items, abilities, equipment modifiers or full run controller are implemented.
+signal and must not be used to apply the effects a second time. It now completes
+board playback before the post-match decision, not the whole combat turn.
+Shield Bash and End Turn are the only functional action buttons; no crafting,
+items, other abilities, equipment modifiers or full run controller are implemented.
 Prototype constants and launch/test commands are in `COMBAT_UI_PROTOTYPE.md`;
 these testing values do not finalize the GDD's open balance decisions.
 
@@ -67,7 +71,16 @@ scripts/characters/class_definition.gd
 These are planned boundaries, not instructions to implement systems now. Keep definitions extensible for future classes, loot and crafting; the MVP has only Warden. Future crafting should distinguish between-battle and emergency material costs (Bandage: 4/6 herbs respectively), with activation AP cost separate from any proposed crafting AP cost. No crafting AP cost is approved. See the GDD for approved rules and provisional balance. Fatigue is outside the MVP.
 
 ## State and input safety
-States: `PLAYER_INPUT`, `RESOLVING_BOARD`, `RESOLVING_EFFECTS`, `ENEMY_ACTION`, `VICTORY`, `DEFEAT`. All input actions validate phase; do not allow animation callbacks to create extra turns. Mark transitions explicitly.
+States: `PLAYER_INPUT`, `RESOLVING_BOARD`, `RESOLVING_EFFECTS`, `POST_MATCH`, `ENEMY_ACTION`, `VICTORY`, `DEFEAT`. Board swaps are accepted only during `PLAYER_INPUT`. Shield Bash is accepted during `PLAYER_INPUT` or `POST_MATCH`, with Guard > 0 and at least 3 AP. All input actions validate phase; do not allow animation callbacks to create extra turns. Mark transitions explicitly.
+
+`CombatRules.can_shield_bash()` and `shield_bash()` validate before mutation,
+capture Guard, spend exactly 3 AP, clear Guard, then apply physical damage using
+the existing armor subtraction (no penetration). The controller's
+`activate_shield_bash()` checks victory immediately, otherwise retaining the
+current phase. No board/RNG, intent, swap count, Ward or run inventory is changed
+by the ability; standard combat-end cleanup remains in force on lethal damage.
+There is no cooldown or once-per-turn flag. The UI additionally blocks activation
+throughout visual playback, including the brief swap preview before model resolution.
 
 ## Determinism and testing
 - Seed board generation for replayable tests.

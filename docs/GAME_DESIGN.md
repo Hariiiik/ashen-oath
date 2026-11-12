@@ -1,5 +1,5 @@
 # Ashen Oath — Game Design Document (GDD)
-Version: 0.2 (approved combat tile design). Status: **rules below are approved where marked; unresolved balance values and future ideas remain provisional.** This document specifies intended behavior, not implemented gameplay.
+Version: 0.3 (approved combat tiles and Shield Bash). Status: **rules below are approved where marked; unresolved balance values and future ideas remain provisional.** This document specifies intended behavior, not implemented gameplay.
 
 ## High concept
 A single-player Windows PC grimdark pixel-art roguelite. The player fights monstrous enemies with a turn-based hybrid Match-3 board, class abilities and equipment. Runs are self-contained; future unlocks and a hub may be added later, without being part of the initial MVP.
@@ -28,11 +28,11 @@ A single-player Windows PC grimdark pixel-art roguelite. The player fights monst
 1. Show enemy intent before player acts.
 2. Player may activate allowed skills, then perform a tile swap/move.
 3. Resolve matches, effects, falls and cascades in deterministic order; play queued animations.
-4. Resolve win condition. If enemy survives, execute its announced action.
-5. Resolve loss condition, update intent and return control to the player.
+4. Resolve win condition. If the enemy survives, enter a post-match ability window: no further board swap, Shield Bash may be activated if available. The player explicitly selects **End Turn**; there is no decision timer or automatic enemy action.
+5. Execute the announced enemy action only after End Turn. Resolve loss condition, expire remaining Guard, update intent and return control to the player.
 6. During resolution/animations, disable board and action inputs.
 
-**Provisional design decision:** One valid matching swap consumes one player turn. Invalid swaps revert and do not consume a turn. Cascades remain part of the same turn. Explicit ability costs and whether a skill consumes an action remain to be designed. This is a proposal, not a final game rule.
+**Approved turn timing (Milestone 4A):** One valid matching swap consumes the player's board move for the turn. Invalid swaps revert and do not consume it. Cascades remain part of the same turn. Shield Bash is available before that swap and after all cascades, before End Turn; it neither consumes nor grants a board swap. Other ability timings/costs remain open.
 
 ## Combat tiles (approved MVP rules)
 The board is 7x7 with exactly four base tile types: **Sword, Shield, Herb, Action**. Skull/Occult and Heart tiles are excluded from the MVP. Do not introduce multiple herb/flower variants or additional base tiles.
@@ -67,9 +67,19 @@ Match-3 activates the basic tile effect. Match-4/5 activates an immediate specia
 - Board state and random seed should be reproducible for tests.
 
 ## Classes
-**Approved MVP:** Warden is the only playable class. Its defensive direction does not approve specific abilities or counterattack mechanics.
+**Approved MVP:** Warden is the only playable class. Shield Bash below is the first approved active ability; no other ability or counterattack mechanic is approved by the class's defensive direction.
 
 **Future ideas only:** Heretic (curses/life drain) and Reaver (bleed/risk and reward). Future classes do not authorize Skull/Occult tiles in the MVP. Keep class definitions extensible without implementing additional classes now.
+
+### Shield Bash (approved — Milestone 4A)
+
+- Warden active ability costing **3 AP**, base damage **0**. Store current Guard at activation, spend 3 AP, consume all Guard and deal that stored amount as physical damage (1:1 before existing physical mitigation). No bonus, critical strike, armor penetration or cooldown. The test enemy is unarmored.
+- Ward contributes no damage and is not consumed by the ability. Existing combat-end cleanup still clears Ward if the hit wins the encounter.
+- Requires Guard > 0 and AP >= 3. Valid only in pre-swap player input or the post-match decision phase; never during swap/cascade playback, enemy action or victory/defeat.
+- Does not generate AP/Guard, consume the board swap, grant another swap or automatically advance the enemy turn. If the enemy survives, remain in the same player ability window.
+- May be activated repeatedly if Guard is regained and sufficient AP remains; no once-per-turn limit.
+- Check victory immediately after damage; a kill prevents retaliation. Invalid activation changes no combat state.
+- The first ability slot is Shield Bash; the second stays locked. Post-match **End Turn** explicitly closes the ability window and permits the enemy action. End Turn is unavailable before the board move.
 
 ## Equipment (future)
 - Potential slots: weapon, armor, helmet, amulet, two rings.
@@ -95,7 +105,7 @@ Enter run as Warden → select room → battle/event/reward → next room/boss �
 ## Open decisions
 - Damage, critical multipliers, armor penetration balance, Guard/Ward amounts and absorption order, starting HP, enemy balance.
 - Herb yields and encounter collection budgets; immediate Match-4/5 rewards for Herb and Action.
-- AP generation/limits, ability costs/timings and whether a skill consumes an action; healing amount and activation AP cost for Bandage.
+- AP generation/limits and future ability costs/timings (Shield Bash's 3 AP cost and swap-free timing are approved above); healing amount and activation AP cost for Bandage.
 - Additional AP cost for emergency crafting is a proposal only. Other status effects and durations remain open; Guard/Ward expiry is approved above.
 - Exact equipment slots and reward choices.
 - Individual art designs and UI spacing; overall direction and starting palette are approved in [ART_DIRECTION.md](ART_DIRECTION.md).

@@ -13,11 +13,34 @@ tiles, and geometric portrait placeholders. Select one tile, then an orthogonall
 adjacent tile to swap. Re-click to deselect; a distant click selects a different
 tile. Invalid swaps revert without spending a move. Valid swaps clear matches,
 apply gravity/refill and resolve cascades with input locked. A valid swap consumes
-one player turn; an invalid swap consumes none. After all surviving cascades, the
-enemy executes its displayed intent. Victory prevents retaliation; victory and
+one player board move; an invalid swap consumes none. After all surviving cascades,
+the board locks and the player may use Shield Bash, then explicitly press **End
+Turn** to let the enemy execute its displayed intent. There is no decision timer.
+Victory prevents retaliation; victory and
 defeat lock the board. Press F6 again in the editor to restart the encounter.
 HP, Guard, Ward, AP, herbs, budget, turn and intent are live state. Equipment,
-ability slots and status slots remain placeholders.
+the second ability slot and status slots remain placeholders. Shield Bash is functional.
+
+## Shield Bash and turn timing (Milestone 4A)
+
+The first ability button is **Shield Bash / 3 AP** with the tooltip:
+"Consume all Guard to deal equal physical damage. Costs 3 AP."
+It is enabled only with positive Guard, at least 3 AP, and a player ability window
+(before the board swap or after all cascades). It is disabled during playback,
+enemy actions and terminal states. Hover still previews three AP segments when
+unavailable; insufficient AP is clearly marked. The second ability is locked.
+
+Activation consumes 3 AP and all stored Guard, applying that Guard amount as
+physical damage with existing mitigation. Ward is untouched by the ability;
+standard combat-end cleanup applies on victory. Feedback reports Guard consumed
+and physical damage. No swap, AP/Guard generation, cooldown or automatic enemy
+action is triggered. Reuse is allowed if Guard and AP become available again.
+
+After a valid swap's playback, `POST_MATCH` enables **End Turn** while keeping the
+board disabled. The player may activate Shield Bash or finish the turn. End Turn
+is disabled before a swap and during playback/enemy action/outcomes. Its click
+alone starts the existing short enemy-action presentation delay; the decision
+window has no automatic delay/timeout. The next turn restores board input.
 
 ## Modular presentation layout
 
@@ -37,10 +60,11 @@ to larger 16:9 windows. Nearest filtering and the provisional PNG tile art remai
   logical 1080p). The silhouette remains temporary native art. Compact G/W/empty
   status badges expose descriptions and exact live counts through tooltips.
 - `scripts/ui/segmented_meter.gd`: six muted yellow/olive AP segments use Rotting
-  Leaf and Bone highlights from the approved palette. Reserved ability buttons
-  preview **2 or 4 AP only as UI examples**, not approved ability costs. Hover or
+  Leaf and Bone highlights from the approved palette. Shield Bash previews its
+  approved **3 AP** cost; the second slot is locked. Hover or
   keyboard focus outlines required segments; unavailable segments receive rust
-  crosses and an explicit insufficient-AP label. Neither hover nor click spends AP.
+  crosses and an explicit insufficient-AP label. Hover spends nothing; a valid
+  Shield Bash click spends 3 AP through the combat controller.
 - The same component presents decorative worn iron plates with Guard chainmail
   patches and a translucent Ward overlay. Each active overlay segment represents
   up to six points, visually saturating above 36; exact Guard/Ward values remain
@@ -56,8 +80,9 @@ to larger 16:9 windows. Nearest filtering and the provisional PNG tile art remai
 - Combat feedback and turn labels stay below the board. Long feedback is clipped
   to preserve the layout, with the full report on hover after resolution.
 
-All additions are presentation-only. The board model, combat controller, rules,
-resource calculations and turn-resolution sequence are unchanged.
+The layout refactor was presentation-only. Milestone 4A additionally connects
+Shield Bash and the post-match phase to the controller/rules, preserving the
+board engine and all existing tile/resource effects.
 
 Presentation lives in `scripts/ui/`; pure board logic lives in
 `scripts/board/board_model.gd` and has no UI/node dependencies. Combat state,
@@ -112,6 +137,8 @@ Board algorithm tests:
 `godot --headless --path . --script tests/board_model_test.gd`.
 Combat rules and controller tests:
 `godot --headless --path . --script tests/combat_test.gd`.
+Shield Bash rules, timing and UI tests:
+`godot --headless --path . --script tests/shield_bash_test.gd`.
 Presentation component and responsive layout tests:
 `godot --headless --path . --script tests/presentation_smoke.gd`.
 This validates 1280x720 and 1920x1080, all 49 pointer hit targets, stage capacity,
@@ -122,7 +149,7 @@ The UI smoke test above also exercises rollback, valid swaps, input locking,
 live HP/resources, enemy retaliation, terminal input locks, and victory/defeat.
 
 Remaining work: balance testing, approved pixel art and visual review in a window.
-Crafting, item usage, abilities, equipment stats, additional classes/enemies,
-Hub and procedural dungeon remain outside this sprint. AP and herbs accumulate
-but cannot yet be spent. Visual playback uses brief clear/refill steps rather
+Crafting, item usage, other abilities, equipment stats, additional classes/enemies,
+Hub and procedural dungeon remain outside this slice. AP can be spent on Shield
+Bash; herbs cannot yet be spent. Visual playback uses brief clear/refill steps rather
 than sliding tile animations. There is no in-game restart or save system.

@@ -52,7 +52,25 @@ func resolve_next_step() -> Array[Dictionary]:
 
 func finish_player_resolution() -> void:
 	if state.phase == State.Phase.RESOLVING_BOARD and pending != null and next_step == pending.steps.size():
-		state.phase = State.Phase.ENEMY_ACTION
+		state.phase = State.Phase.POST_MATCH
+
+
+func can_shield_bash() -> bool:
+	return Rules.can_shield_bash(state)
+
+
+func activate_shield_bash() -> Dictionary:
+	var report: Dictionary = Rules.shield_bash(state)
+	if report.valid and state.enemy_hp == 0:
+		_end(State.Phase.VICTORY)
+	return report
+
+
+func end_turn() -> bool:
+	if state.phase != State.Phase.POST_MATCH:
+		return false
+	state.phase = State.Phase.ENEMY_ACTION
+	return true
 
 
 func execute_enemy_action() -> Dictionary:
