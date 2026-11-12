@@ -17,9 +17,9 @@ func _verify() -> void:
 	root.add_child(screen)
 	await process_frame
 	await process_frame
-	var tiles: Array[Node] = screen.find_children("*", "Button", true, false)
+	var tiles: Array = screen.get("tiles")
 	var count: int = 0
-	var enemy_stage := screen.get_child(2).get_child(0).get_child(1) as Control
+	var enemy_stage := screen.get("enemy_stage") as Control
 	for node: Node in tiles:
 		var button := node as Button
 		if button.disabled:

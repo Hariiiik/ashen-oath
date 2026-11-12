@@ -6,6 +6,9 @@ const PORTRAIT = preload("res://scripts/ui/placeholder_portrait.gd")
 const BOARD = preload("res://scripts/board/board_model.gd")
 const COMBAT = preload("res://scripts/combat/combat_controller.gd")
 const STATE = preload("res://scripts/combat/combat_state.gd")
+const ENEMY_STAGE = preload("res://scripts/ui/enemy_stage.gd")
+const METER = preload("res://scripts/ui/segmented_meter.gd")
+const INVENTORY = preload("res://scripts/ui/inventory_grid.gd")
 signal board_resolved(result: BOARD.SwapResult)
 @export var board_seed: int = 1
 var feedback: Label
@@ -25,6 +28,17 @@ var tiles: Array[Button] = []
 var selected: int = -1
 var resolving: bool = false
 var moves: int = 0
+var enemy_stage: ENEMY_STAGE
+var ap_meter: METER
+var defense_meter: METER
+var inventory: INVENTORY
+var hero_portrait: Control
+var board_grid: GridContainer
+var board_frame: CenterContainer
+var art_clearance: Control
+var center_column: VBoxContainer
+var ability_previews: Array[Button] = []
+var status_icons: Array[Button] = []
 
 
 func _ready() -> void:
@@ -40,6 +54,8 @@ func _ready() -> void:
 	_build_center(_column(0.2, 0.8))
 	_build_loadout(_column(0.8, 1.0))
 	_sync_state()
+	resized.connect(_resize_presentation)
+	_resize_presentation.call_deferred()
 
 
 func _style(fill: String, border: String) -> StyleBoxFlat:
@@ -47,8 +63,8 @@ func _style(fill: String, border: String) -> StyleBoxFlat:
 	style.bg_color = Color(fill)
 	style.border_color = Color(border)
 	style.set_border_width_all(2)
-	style.content_margin_left = 12
-	style.content_margin_right = 12
+	style.content_margin_left = 8
+	style.content_margin_right = 8
 	style.content_margin_top = 8
 	style.content_margin_bottom = 8
 	return style
@@ -57,15 +73,15 @@ func _style(fill: String, border: String) -> StyleBoxFlat:
 func _make_theme() -> Theme:
 	var result := Theme.new()
 	result.default_font_size = 16
-	result.set_color("font_color", "Label", Color("dbd3c0"))
-	result.set_stylebox("panel", "PanelContainer", _style("1b1c23", "51493e"))
-	result.set_stylebox("normal", "Button", _style("262830", "514d48"))
-	result.set_stylebox("hover", "Button", _style("36343a", "b39a66"))
-	result.set_stylebox("pressed", "Button", _style("41343a", "b39a66"))
-	result.set_stylebox("disabled", "Button", _style("202127", "3e3a36"))
-	result.set_color("font_disabled_color", "Button", Color("a49d90"))
-	result.set_stylebox("background", "ProgressBar", _style("101116", "51493e"))
-	result.set_stylebox("fill", "ProgressBar", _style("803f4b", "803f4b"))
+	result.set_color("font_color", "Label", Color("C8B89A"))
+	result.set_stylebox("panel", "PanelContainer", _style("161515", "44484A"))
+	result.set_stylebox("normal", "Button", _style("26211E", "53606A"))
+	result.set_stylebox("hover", "Button", _style("2F3438", "A1693D"))
+	result.set_stylebox("pressed", "Button", _style("2F4A34", "87919A"))
+	result.set_stylebox("disabled", "Button", _style("26211E", "44484A"))
+	result.set_color("font_disabled_color", "Button", Color("8E7D62"))
+	result.set_stylebox("background", "ProgressBar", _style("161515", "44484A"))
+	result.set_stylebox("fill", "ProgressBar", _style("6A2E2A", "8A4A32"))
 	return result
 
 
@@ -80,7 +96,7 @@ func _column(left: float, right: float) -> VBoxContainer:
 	panel.offset_top = 12
 	panel.offset_bottom = -12
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 10)
+	column.add_theme_constant_override("separation", 6)
 	panel.add_child(column)
 	return column
 
@@ -121,54 +137,106 @@ func _placeholder(parent: Node, copy: String) -> void:
 
 
 func _build_hero(column: VBoxContainer) -> void:
-	_label(column, "THE OATHBOUND", 20)
-	_portrait(column, false, 172)
+	_label(column, "THE OATHBOUND", 18)
+	hero_portrait = _portrait(column, false, 320)
 	_label(column, "Ser Aldric", 24)
 	_label(column, "WARDEN  /  LEVEL 01")
 	hero_hp_label = _label(column, "")
 	hero_hp_bar = _health(column)
-	defense_label = _label(column, "", 18)
-	column.add_child(HSeparator.new())
-	_label(column, "STATUS EFFECTS")
-	_placeholder(column, "—   —   —")
+	defense_label = _label(column, "", 15)
+	defense_meter = METER.new()
+	defense_meter.defense = true
+	column.add_child(defense_meter)
+	var statuses := HBoxContainer.new()
+	statuses.alignment = BoxContainer.ALIGNMENT_CENTER
+	column.add_child(statuses)
+	for caption: String in ["G", "W", "—"]:
+		var badge := Button.new()
+		badge.text = caption
+		badge.add_theme_font_size_override("font_size", 12)
+		badge.custom_minimum_size = Vector2(34, 30)
+		badge.tooltip_text = "No additional status effects" if caption == "—" else caption
+		statuses.add_child(badge)
+		status_icons.append(badge)
+	ap_label = _label(column, "", 14)
+	ap_meter = METER.new()
+	column.add_child(ap_meter)
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(spacer)
-	_label(column, "Core combat prototype", 14)
-	_label(column, "Balance values are provisional", 13)
+	_label(column, "Prototype balance", 13)
 
 
 func _build_center(column: VBoxContainer) -> void:
+	center_column = column
 	column.add_theme_constant_override("separation", 2)
 	_label(column, "ASHEN OATH  /  THE HOLLOW CRYPT", 18)
-	# Artwork extends above its decorative frame, in a separate region from the board.
-	var stage := PanelContainer.new()
-	stage.custom_minimum_size.y = 116
-	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_child(stage)
-	var portrait := _portrait(stage, true, 100)
-	portrait.z_index = 1
-	enemy_hp_label = _label(column, "")
-	enemy_hp_bar = _health(column)
-	intent_label = _label(column, "", 16)
-	var center := CenterContainer.new()
-	column.add_child(center)
-	var grid := GridContainer.new()
-	grid.columns = 7
-	grid.add_theme_constant_override("h_separation", 4)
-	grid.add_theme_constant_override("v_separation", 4)
-	center.add_child(grid)
+	enemy_stage = ENEMY_STAGE.new()
+	enemy_stage.custom_minimum_size.y = 128
+	column.add_child(enemy_stage)
+	enemy_stage.slots_changed.connect(_on_enemy_slots_changed)
+	_bind_primary_enemy()
+	art_clearance = Control.new()
+	art_clearance.name = "ArtworkClearance"
+	art_clearance.custom_minimum_size.y = 80
+	art_clearance.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(art_clearance)
+	board_frame = CenterContainer.new()
+	column.add_child(board_frame)
+	board_grid = GridContainer.new()
+	board_grid.columns = 7
+	board_grid.add_theme_constant_override("h_separation", 4)
+	board_grid.add_theme_constant_override("v_separation", 4)
+	board_frame.add_child(board_grid)
 	for row: int in range(7):
 		for col: int in range(7):
 			var tile := TILE_SCENE.instantiate() as Button
 			tile.set("tile_kind", board.cells[row * 7 + col])
 			tiles.append(tile)
-			grid.add_child(tile)
+			board_grid.add_child(tile)
 			tile.pressed.connect(_on_tile_pressed.bind(row * 7 + col))
 	turn_label = _label(column, "BOARD MOVE 00  /  SELECT TWO ADJACENT TILES", 16)
 	feedback = _label(column, "Sword / Shield / Herb / Action  •  Seed %d" % board_seed, 14)
 	# Long cascade reports must not push the three columns beyond the viewport.
 	feedback.clip_text = true
+	feedback.custom_minimum_size.y = 26
+	feedback.mouse_filter = Control.MOUSE_FILTER_PASS
+
+
+func _bind_primary_enemy() -> void:
+	enemy_hp_label = enemy_stage.primary_hp_label
+	enemy_hp_bar = enemy_stage.primary_hp_bar
+	intent_label = enemy_stage.primary_intent
+
+
+func _on_enemy_slots_changed() -> void:
+	_bind_primary_enemy()
+	_sync_state()
+
+
+func _resize_presentation() -> void:
+	if not is_instance_valid(board_grid):
+		return
+	# Allocate the remaining central height to an integer-sized square board.
+	enemy_stage.custom_minimum_size.y = floorf(maxf(128, size.y * 0.178))
+	hero_portrait.custom_minimum_size.y = floorf(maxf(320, size.y * 0.445))
+	var available_height: float = size.y - 24 - 16 - 22 - enemy_stage.custom_minimum_size.y - art_clearance.custom_minimum_size.y - 26 - 23 - 12
+	var available_width: float = size.x * 0.6 - 32
+	var side: float = floorf((minf(available_height, available_width) - 24) / 7.0)
+	for tile: Button in tiles:
+		tile.custom_minimum_size = Vector2.ONE * maxf(40, side)
+
+
+func _preview_ap(cost: int) -> void:
+	ap_meter.set_preview(cost)
+	ap_label.text = "AP %d / 6" % combat.state.ap
+	if cost > 0:
+		if combat.state.ap < cost:
+			ap_label.text += " / insufficient (%d)" % cost
+		else:
+			ap_label.text += " / cost %d" % cost
+	ap_label.modulate = Color("A1693D") if cost > combat.state.ap else Color.WHITE
+	ap_meter.tooltip_text = "Insufficient AP: need %d, have %d. Cost preview only." % [cost, combat.state.ap] if cost > combat.state.ap else "Shared AP for future abilities and items."
 
 
 func _on_tile_pressed(index: int) -> void:
@@ -248,14 +316,22 @@ func _sync_state() -> void:
 	hero_hp_label.text = "HP  %d / %d" % [state.player_hp, state.player_max_hp]
 	hero_hp_bar.max_value = state.player_max_hp
 	hero_hp_bar.value = state.player_hp
-	enemy_hp_label.text = "THE HOLLOW SENTINEL / HP %d / %d" % [state.enemy_hp, state.enemy_max_hp]
+	enemy_hp_label.text = "HP %d / %d" % [state.enemy_hp, state.enemy_max_hp]
 	enemy_hp_bar.max_value = state.enemy_max_hp
 	enemy_hp_bar.value = state.enemy_hp
 	defense_label.text = "GUARD %d   /   WARD %d" % [state.guard, state.ward]
-	ap_label.text = "AP  %d / 6" % state.ap
+	ap_meter.show_ap(state.ap)
+	_preview_ap(ap_meter.preview_cost)
+	defense_meter.show_defense(state.guard, state.ward)
+	status_icons[0].tooltip_text = "Guard: %d. Absorbs first; expires after the next enemy action." % state.guard
+	status_icons[1].tooltip_text = "Ward: %d. Persists until consumed or combat ends." % state.ward
+	status_icons[0].modulate = Color.WHITE if state.guard > 0 else Color("53606A")
+	status_icons[1].modulate = Color.WHITE if state.ward > 0 else Color("53606A")
 	herbs_label.text = "Run herbs  %d" % state.run_inventory.herbs
 	budget_label.text = "Herb budget left  %d" % state.herb_budget
-	intent_label.text = "INTENT / Attack for %d damage" % state.enemy_intent if not state.is_finished() else "INTENT / Combat ended"
+	inventory.set_quantity("herb", state.run_inventory.herbs)
+	intent_label.text = "Attack for %d damage" % state.enemy_intent if not state.is_finished() else "Combat ended"
+	intent_label.tooltip_text = intent_label.text
 	turn_label.text = "TURN %02d / %s" % [state.turn, STATE.Phase.keys()[state.phase].replace("_", " ")]
 
 
@@ -267,16 +343,34 @@ func _refresh(values: Array[int]) -> void:
 
 
 func _build_loadout(column: VBoxContainer) -> void:
-	_label(column, "EQUIPMENT", 20)
+	_label(column, "EQUIPMENT", 18)
+	var equipment := GridContainer.new()
+	equipment.columns = 3
+	column.add_child(equipment)
 	for slot: String in ["Weapon", "Armor", "Helmet", "Amulet", "Ring I", "Ring II"]:
-		_placeholder(column, slot + "   /   —")
-	column.add_child(HSeparator.new())
-	_label(column, "ACTIVE ABILITIES", 18)
-	_placeholder(column, "Ability slot I   /   Locked")
-	_placeholder(column, "Ability slot II   /   Locked")
-	column.add_child(HSeparator.new())
-	_label(column, "RESOURCES", 18)
-	ap_label = _label(column, "")
+		var button := Button.new()
+		button.text = {"Weapon": "Wpn", "Armor": "Arm", "Helmet": "Hel", "Amulet": "Amu", "Ring I": "R1", "Ring II": "R2"}[slot]
+		button.custom_minimum_size = Vector2(62, 34)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.tooltip_text = slot + " — empty equipment slot"
+		equipment.add_child(button)
+	_label(column, "ABILITIES", 16)
+	for cost: int in [2, 4]:
+		var button := Button.new()
+		button.text = "Preview slot / %d AP" % cost
+		button.custom_minimum_size.y = 32
+		button.tooltip_text = "Reserved ability slot. Hover previews %d AP only; cost is not approved and no action is assigned." % cost
+		button.mouse_entered.connect(_preview_ap.bind(cost))
+		button.mouse_exited.connect(_preview_ap.bind(0))
+		button.focus_entered.connect(_preview_ap.bind(cost))
+		button.focus_exited.connect(_preview_ap.bind(0))
+		column.add_child(button)
+		ability_previews.append(button)
+	_label(column, "CONSUMABLES", 16)
+	_placeholder(column, "Reserved / —")
+	_label(column, "INVENTORY", 16)
+	inventory = INVENTORY.new()
+	column.add_child(inventory)
+	inventory.set_entries([{"id": "herb", "name": "Herb bundle", "description": "Collected herbs. Materials only; no automatic healing.", "texture": preload("res://assets/tiles/herb.png"), "quantity": 0}])
 	herbs_label = _label(column, "")
-	budget_label = _label(column, "")
-	_label(column, "Loadout preview only", 14)
+	budget_label = _label(column, "", 14)
