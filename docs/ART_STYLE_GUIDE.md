@@ -1,5 +1,9 @@
 # Pixel Art Direction — Draft v0.1
 
+This earlier draft is subordinate to [ART_DIRECTION.md](ART_DIRECTION.md), the
+approved Forest / Rust / Iron specification. Use that document for visual
+identity, palette, pixel density, materials, lighting and asset review criteria.
+
 ## Identity
 Oppressive grimdark gothic fantasy: broken black iron, weathered stone, bone, ash, muted crimson and sickly highlights. Avoid glossy mobile-game art, cheerful saturation or mixed pixel densities.
 
@@ -15,8 +19,7 @@ Oppressive grimdark gothic fantasy: broken black iron, weathered stone, bone, as
 ## Combat visual priority
 Enemy artwork hangs over the board. Some body parts can bleed into ornamental borders; click/touch targets and vital indicators must stay legible and unobstructed.
 
-## Planned specs (not locked)
-- Item icons: logical 64x64 source canvas.
-- Hero portrait: vertical composition.
-- Monster art: flexible resolution with consistent apparent pixel size.
-- First pass: placeholders, then one approved enemy and one approved hero portrait before generating batches.
+## Production scope
+- Fixed sprite resolutions, tile dimensions and animation frame counts are not approved.
+- Individual characters, tiles and UI designs in the concept sheet require separate approval.
+- Next art task: design and approve the four combat tiles individually before producing further asset batches.

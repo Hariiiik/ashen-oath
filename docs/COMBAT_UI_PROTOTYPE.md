@@ -19,6 +19,46 @@ defeat lock the board. Press F6 again in the editor to restart the encounter.
 HP, Guard, Ward, AP, herbs, budget, turn and intent are live state. Equipment,
 ability slots and status slots remain placeholders.
 
+## Modular presentation layout
+
+The screen retains 20/60/20 hero/center/loadout zones. At the 1280x720 reference
+size the board uses 52px square hitboxes (388px board including gaps), compared
+with the earlier 40px tiles. At a logical 1920x1080 it uses 94px tiles (682px
+board). These are responsive layout results, not asset production specifications.
+The normal canvas-items stretch mode also supports scaling the reference layout
+to larger 16:9 windows. Nearest filtering and the provisional PNG tile art remain.
+
+- `scripts/ui/enemy_stage.gd`: a clipped, mouse-ignoring visual stage supports
+  `set_enemy_count(1..3)`. Only its first card binds the existing enemy state;
+  extra cards are explicitly previews, without combat actors or targeting. Slot
+  changes rebind the live primary labels. A dedicated 80px clearance region
+  separates the stage from the board; artwork must remain within stage bounds.
+- Hero portrait height grows from 172px to 320px at reference size (480px at
+  logical 1080p). The silhouette remains temporary native art. Compact G/W/empty
+  status badges expose descriptions and exact live counts through tooltips.
+- `scripts/ui/segmented_meter.gd`: six muted yellow/olive AP segments use Rotting
+  Leaf and Bone highlights from the approved palette. Reserved ability buttons
+  preview **2 or 4 AP only as UI examples**, not approved ability costs. Hover or
+  keyboard focus outlines required segments; unavailable segments receive rust
+  crosses and an explicit insufficient-AP label. Neither hover nor click spends AP.
+- The same component presents decorative worn iron plates with Guard chainmail
+  patches and a translucent Ward overlay. Each active overlay segment represents
+  up to six points, visually saturating above 36; exact Guard/Ward values remain
+  in labels/tooltips. The backing plates are not Armor or another resource.
+- Compact equipment slots have full-name hover tooltips; no equipment behavior
+  is connected. Reserved ability and consumable areas remain visible.
+- `scripts/ui/inventory_grid.gd`: scrollable three-column view accepts item
+  dictionaries (`id`, `name`, `description`, `texture`, `quantity`) and updates
+  stacks through `set_quantity()`. The herb bundle uses the provisional Herb PNG
+  and live run count. Empty slots reserve space for future item types; no loot,
+  use, crafting or inventory rules are implemented. Scrolling appears when the
+  entries exceed available space.
+- Combat feedback and turn labels stay below the board. Long feedback is clipped
+  to preserve the layout, with the full report on hover after resolution.
+
+All additions are presentation-only. The board model, combat controller, rules,
+resource calculations and turn-resolution sequence are unchanged.
+
 Presentation lives in `scripts/ui/`; pure board logic lives in
 `scripts/board/board_model.gd` and has no UI/node dependencies. Combat state,
 prototype rules and phase orchestration live in `scripts/combat/`, independent
@@ -72,6 +112,12 @@ Board algorithm tests:
 `godot --headless --path . --script tests/board_model_test.gd`.
 Combat rules and controller tests:
 `godot --headless --path . --script tests/combat_test.gd`.
+Presentation component and responsive layout tests:
+`godot --headless --path . --script tests/presentation_smoke.gd`.
+This validates 1280x720 and 1920x1080, all 49 pointer hit targets, stage capacity,
+art clearance, AP hover previews, read-only defense, inventory scrolling and stack
+counts. To capture rendered previews, run the presentation test without
+`--headless` and append `-- --capture`; captures go to ignored `.godot/ui_*.png`.
 The UI smoke test above also exercises rollback, valid swaps, input locking,
 live HP/resources, enemy retaliation, terminal input locks, and victory/defeat.
 

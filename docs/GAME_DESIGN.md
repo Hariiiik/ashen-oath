@@ -13,7 +13,7 @@ A single-player Windows PC grimdark pixel-art roguelite. The player fights monst
 ## Platform, presentation, audience
 - Platform: Windows PC, keyboard/mouse (mouse-first for the board).
 - Engine: Godot 4, GDScript.
-- Art: AI-assisted pixel art with a consistent style guide and manual correction.
+- Art: detailed, handcrafted pixel-art direction — **Forest / Rust / Iron**. See [ART_DIRECTION.md](ART_DIRECTION.md) for the approved visual identity, starting palette and primary concept reference. Individual asset designs require separate approval; any AI-assisted source requires manual correction and review.
 - Resolution target: 1280x720 baseline; responsive layout for 16:9 at larger resolutions.
 - Core mode: single-player, offline, turn-based.
 
@@ -98,5 +98,5 @@ Enter run as Warden → select room → battle/event/reward → next room/boss �
 - AP generation/limits, ability costs/timings and whether a skill consumes an action; healing amount and activation AP cost for Bandage.
 - Additional AP cost for emergency crafting is a proposal only. Other status effects and durations remain open; Guard/Ward expiry is approved above.
 - Exact equipment slots and reward choices.
-- Pixel-art palette and UI spacing after first visual mockup.
+- Individual art designs and UI spacing; overall direction and starting palette are approved in [ART_DIRECTION.md](ART_DIRECTION.md).
 All undecided items are proposals: seek approval before implementing major new mechanics.

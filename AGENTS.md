@@ -1,7 +1,7 @@
 # Ashen Oath — Repository Instructions for Codex
 
 ## Project
-Godot 4, GDScript, Windows-first, 2D grimdark Match-3 roguelite. **Current state: foundation only.** Do not assume battle mechanics exist.
+Godot 4, GDScript, Windows-first, 2D grimdark Match-3 roguelite. **Current state: playable Match-3 and minimal single-encounter combat prototype.** Inspect existing implementations before extending them; do not assume future RPG/run systems exist. Read `docs/SESSION_HANDOFF.md` for the latest session context and pending work.
 
 ## Read before editing
 1. `docs/GAME_DESIGN.md`
