@@ -4,10 +4,42 @@ const Board = preload("res://scripts/board/board_model.gd")
 const State = preload("res://scripts/combat/combat_state.gd")
 const AP_CAP: int = 6
 const SHIELD_BASH_AP_COST: int = 3
+# Standard recipe is a design reference only; no out-of-combat crafting API.
+const BANDAGE_STANDARD_HERBS: int = 4
+const BANDAGE_EMERGENCY_HERBS: int = 6
+# Provisional prototype values, not final balance.
+const BANDAGE_AP_COST: int = 2
+const BANDAGE_HEAL: int = 12
 const SWORD: Array[int] = [6, 12, 18]
 const SHIELD: Array[int] = [6, 8, 12]
 const HERB: Array[int] = [1, 2, 3]
 const ACTION: Array[int] = [2, 3, 5]
+
+
+static func can_emergency_craft_bandage(state: State) -> bool:
+	return state.phase in [State.Phase.PLAYER_INPUT, State.Phase.POST_MATCH] and state.run_inventory.herbs >= BANDAGE_EMERGENCY_HERBS
+
+
+static func emergency_craft_bandage(state: State) -> Dictionary:
+	if not can_emergency_craft_bandage(state):
+		return {"valid": false}
+	state.run_inventory.herbs -= BANDAGE_EMERGENCY_HERBS
+	state.run_inventory.bandages += 1
+	return {"valid": true, "herbs_spent": BANDAGE_EMERGENCY_HERBS, "bandages_added": 1}
+
+
+static func can_use_bandage(state: State) -> bool:
+	return state.phase in [State.Phase.PLAYER_INPUT, State.Phase.POST_MATCH] and state.run_inventory.bandages > 0 and state.ap >= BANDAGE_AP_COST and state.player_hp < state.player_max_hp
+
+
+static func use_bandage(state: State) -> Dictionary:
+	if not can_use_bandage(state):
+		return {"valid": false}
+	var healed: int = mini(BANDAGE_HEAL, state.player_max_hp - state.player_hp)
+	state.run_inventory.bandages -= 1
+	state.ap -= BANDAGE_AP_COST
+	state.player_hp += healed
+	return {"valid": true, "healed": healed, "ap_spent": BANDAGE_AP_COST, "bandages_used": 1}
 
 
 static func can_shield_bash(state: State) -> bool:

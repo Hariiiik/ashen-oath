@@ -87,6 +87,32 @@ func end_turn() -> bool:
 	return true
 
 
+func can_emergency_craft_bandage() -> bool:
+	return Rules.can_emergency_craft_bandage(state)
+
+
+func emergency_craft_bandage() -> Dictionary:
+	if can_emergency_craft_bandage():
+		_capture_pre_turn()
+	var before: Dictionary = _resources()
+	var report: Dictionary = Rules.emergency_craft_bandage(state)
+	_trace("emergency_craft_bandage", {"effect": report, "before": before, "after": _resources()})
+	return report
+
+
+func can_use_bandage() -> bool:
+	return Rules.can_use_bandage(state)
+
+
+func use_bandage() -> Dictionary:
+	if can_use_bandage():
+		_capture_pre_turn()
+	var before: Dictionary = _resources()
+	var report: Dictionary = Rules.use_bandage(state)
+	_trace("use_bandage", {"effect": report, "before": before, "after": _resources()})
+	return report
+
+
 func execute_enemy_action() -> Dictionary:
 	if state.phase != State.Phase.ENEMY_ACTION:
 		return {}
@@ -129,7 +155,7 @@ func debug_undo_last_turn() -> bool:
 
 
 func _resources() -> Dictionary:
-	return {"hero_hp": state.player_hp, "enemy_hp": state.enemy_hp, "guard": state.guard, "ward": state.ward, "ap": state.ap, "herbs": state.run_inventory.herbs, "budget": state.herb_budget}
+	return {"hero_hp": state.player_hp, "enemy_hp": state.enemy_hp, "guard": state.guard, "ward": state.ward, "ap": state.ap, "herbs": state.run_inventory.herbs, "bandages": state.run_inventory.bandages, "budget": state.herb_budget}
 
 
 func _trace(event: String, detail: Dictionary) -> void:

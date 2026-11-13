@@ -26,7 +26,7 @@ actions. After all steps, `finish_player_resolution()` enters `POST_MATCH`;
 only explicit `end_turn()` opens `ENEMY_ACTION`. No timer advances the decision
 phase. `combat_rules.gd` applies prototype tile effects, Shield Bash and damage absorption;
 `combat_state.gd` owns encounter HP, Guard/Ward, AP, herb budget, phase, turn and
-intent. `run_inventory.gd` stores herbs in memory; passing the same inventory to
+intent. `run_inventory.gd` stores stackable Herbs and Bandages in memory; passing the same inventory to
 another controller retains them without a run system or persistence service.
 
 Groups resolve in row-major order by their first cell. Each deduplicated group
@@ -42,8 +42,9 @@ state, locks input during playback/enemy actions and permanently disables the
 board on victory/defeat. `board_resolved(result)` remains a presentation-completion
 signal and must not be used to apply the effects a second time. It now completes
 board playback before the post-match decision, not the whole combat turn.
-Shield Bash and End Turn are the only functional action buttons; no crafting,
-items, other abilities, equipment modifiers or full run controller are implemented.
+Shield Bash, emergency Bandage crafting/use and End Turn are functional action
+buttons. No standard/between-battle crafting, other items/abilities, equipment
+modifiers or full run controller are implemented.
 Prototype constants and launch/test commands are in `COMBAT_UI_PROTOTYPE.md`;
 these testing values do not finalize the GDD's open balance decisions.
 
@@ -68,7 +69,25 @@ scripts/characters/class_definition.gd
 - `RunState` (later): seed, map progress, run-persistent herb materials, rewards, unlocks; no hub assumption.
 - `ItemDefinition`/`AbilityDefinition` (later): static content definitions, with separate runtime state for cooldowns/uses.
 
-These are planned boundaries, not instructions to implement systems now. Keep definitions extensible for future classes, loot and crafting; the MVP has only Warden. Future crafting should distinguish between-battle and emergency material costs (Bandage: 4/6 herbs respectively), with activation AP cost separate from any proposed crafting AP cost. No crafting AP cost is approved. See the GDD for approved rules and provisional balance. Fatigue is outside the MVP.
+Keep definitions extensible for future classes, loot and crafting; the MVP has only Warden. The only implemented recipe is emergency Bandage crafting for 6 Herbs and no AP. Standard recipe cost is 4 Herbs, but its availability is future preparation between runs or special crafting/safe rooms, not automatic between-battle access. No preparation, safe-room or Hub system is implemented. See the GDD for approved rules and provisional balance. Fatigue is outside the MVP.
+
+### Emergency Bandage slice
+
+`CombatRules` validates player action phases and resources before mutating stacks.
+`emergency_craft_bandage()` consumes 6 Herbs and adds one Bandage without AP or
+healing. `use_bandage()` consumes one Bandage and a provisional 2 AP, restores
+up to a provisional 12 HP and rejects use at full HP. The controller wraps both
+actions with pre-turn Undo capture and diagnostics, leaving board/RNG, phase,
+swap count, Guard/Ward and enemy action unchanged. The UI additionally locks
+both actions throughout visual playback. Tile herb collection remains unchanged.
+
+Encounter persistence uses explicit ownership, not a global/meta store:
+construct controllers with `Combat.new(seed, shared_inventory)`, or assign
+`combat_screen.run_inventory` before adding the scene to the tree. Each encounter
+uses that same `RunInventory` object; a new standalone scene without injection
+creates a fresh one. `RunInventory` owns no encounter phase, HP or AP. No automatic
+encounter transition or post-victory screen is introduced. Inventory adapters
+display both live quantities; Bandage uses a native BND placeholder glyph.
 
 ## State and input safety
 States: `PLAYER_INPUT`, `RESOLVING_BOARD`, `RESOLVING_EFFECTS`, `POST_MATCH`, `ENEMY_ACTION`, `VICTORY`, `DEFEAT`. Board swaps are accepted only during `PLAYER_INPUT`. Shield Bash is accepted during `PLAYER_INPUT` or `POST_MATCH`, with Guard > 0 and at least 3 AP. All input actions validate phase; do not allow animation callbacks to create extra turns. Mark transitions explicitly.
@@ -87,7 +106,7 @@ throughout visual playback, including the brief swap preview before model resolu
 Developer-only diagnostics and one-turn Undo are described in
 `DEBUG_COMBAT.md`. `turn_snapshot.gd` captures the stable state before the first
 successful action of a turn, including pre-swap Shield Bash, and restores board,
-RNG, scalar combat/ability fields and run herbs without replaying effects. Undo
+RNG, scalar combat/ability fields and both run inventory stacks without replaying effects. Undo
 is forbidden during resolution/enemy action but allowed after victory/defeat;
 the UI additionally gates visual playback. These are debug facilities, not combat
 rules or player rewind mechanics. Raw match-run metadata supports diagnosis

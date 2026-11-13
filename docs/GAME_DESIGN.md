@@ -1,5 +1,5 @@
 # Ashen Oath — Game Design Document (GDD)
-Version: 0.3 (approved combat tiles and Shield Bash). Status: **rules below are approved where marked; unresolved balance values and future ideas remain provisional.** This document specifies intended behavior, not implemented gameplay.
+Version: 0.4 (approved combat tiles, Shield Bash and emergency Bandage crafting). Status: **rules below are approved where marked; unresolved balance values and future ideas remain provisional.** This document specifies intended behavior, not implemented gameplay.
 
 ## High concept
 A single-player Windows PC grimdark pixel-art roguelite. The player fights monstrous enemies with a turn-based hybrid Match-3 board, class abilities and equipment. Runs are self-contained; future unlocks and a hub may be added later, without being part of the initial MVP.
@@ -26,9 +26,9 @@ A single-player Windows PC grimdark pixel-art roguelite. The player fights monst
 
 ## Turn model (approved)
 1. Show enemy intent before player acts.
-2. Player may activate allowed skills, then perform a tile swap/move.
+2. Player may activate allowed skills, emergency-craft or use Bandage, then perform a tile swap/move.
 3. Resolve matches, effects, falls and cascades in deterministic order; play queued animations.
-4. Resolve win condition. If the enemy survives, enter a post-match ability window: no further board swap, Shield Bash may be activated if available. The player explicitly selects **End Turn**; there is no decision timer or automatic enemy action.
+4. Resolve win condition. If the enemy survives, enter a post-match action window: no further board swap; Shield Bash, emergency crafting and Bandage use may be activated if available. The player explicitly selects **End Turn**; there is no decision timer or automatic enemy action.
 5. Execute the announced enemy action only after End Turn. Resolve loss condition, expire remaining Guard, update intent and return control to the player.
 6. During resolution/animations, disable board and action inputs.
 
@@ -51,12 +51,13 @@ Match-3 activates the basic tile effect. Match-4/5 activates an immediate specia
 **Action Points (approved):** AP is a shared resource for consumables and class abilities. AP does not grant additional board swaps. AP generation amounts, limits and action costs remain provisional.
 
 ### Herb collection, crafting and healing (approved rules)
-- Herb materials persist throughout the current run.
+- Stackable Herbs and Bandages persist between encounters throughout the current run, in a run-owned inventory. No meta-inventory or disk persistence is implied.
 - Each encounter has a finite herb collection budget. Once exhausted, herb matches still resolve normally but produce no more materials. Herb tiles remain on the board.
-- Craft primarily between battles at normal material cost. Emergency crafting is allowed in combat at increased material cost.
+- Standard Bandage crafting costs **4 Herbs**, but is not automatically available between regular combat encounters. Preparation is intended **between runs**, not after every room/victory. Special crafting/safe rooms are future ideas only. Do not implement between-battle crafting, a Preparation Screen, Hub, safe rooms or meta-inventory in the current slice.
+- Emergency combat crafting costs **6 Herbs per Bandage** and has **no AP cost**. It creates one stacked Bandage, without healing automatically or resetting the encounter collection budget.
 - Healing items are activated manually and consume AP. Herb matches never heal automatically.
-- The intended first healing item is **Bandage**: craft for **4 herbs between battles** or **6 herbs during battle**. These are the approved starting recipe costs; healing amount and activation AP cost remain provisional.
-- An additional AP cost for emergency crafting is only a balance proposal, not approved. Do not confuse it with the approved AP cost for manually activating a healing item.
+- The only implemented healing item is **Bandage**. Manually using one consumes **1 Bandage and a provisional 2 AP**, restoring **a provisional 12 HP**, capped at max HP. The current prototype rejects full-HP use to avoid wasting the item; this is an implementation guard, not a new healing effect.
+- Crafting and Bandage use are allowed in the pre-swap and post-match action windows only. They preserve the current phase and neither consume nor grant a board swap, advance the enemy action or create AP/Guard/Ward. Block them during resolution, enemy actions and victory/defeat. Emergency crafting can occur at zero AP if materials suffice.
 - Herb budget size, material yield and Match-4/5 rewards for Herb and Action remain unresolved. Do not invent these rewards.
 
 ### Match rules (provisional)
@@ -99,14 +100,14 @@ Enter run as Warden → select room → battle/event/reward → next room/boss �
 
 ### Explicitly out of scope initially
 - Hub UI and NPCs, additional classes, multiplayer, procedural overworld, multiple bosses, loot sets, complex meta-progression, elaborate skill trees.
-- Crafting rules above are approved design for later implementation; do not build crafting, loot, additional classes or a Hub in the current documentation/UI work. Preserve architecture extension points only.
+- Only emergency Bandage crafting/use is implemented in Milestone 4B. Standard/between-battle crafting, preparation, safe rooms, other recipes/consumables, loot, additional classes and a Hub remain outside this slice. Preserve architecture extension points only.
 - Fatigue is not part of the MVP. It is a possible anti-stalling mechanic for later testing, not an approved rule.
 
 ## Open decisions
 - Damage, critical multipliers, armor penetration balance, Guard/Ward amounts and absorption order, starting HP, enemy balance.
 - Herb yields and encounter collection budgets; immediate Match-4/5 rewards for Herb and Action.
 - AP generation/limits and future ability costs/timings (Shield Bash's 3 AP cost and swap-free timing are approved above); healing amount and activation AP cost for Bandage.
-- Additional AP cost for emergency crafting is a proposal only. Other status effects and durations remain open; Guard/Ward expiry is approved above.
+- Emergency crafting has no AP cost; Bandage's 2 AP/12 HP are provisional testing values. Other status effects and durations remain open; Guard/Ward expiry is approved above.
 - Exact equipment slots and reward choices.
 - Individual art designs and UI spacing; overall direction and starting palette are approved in [ART_DIRECTION.md](ART_DIRECTION.md).
 All undecided items are proposals: seek approval before implementing major new mechanics.

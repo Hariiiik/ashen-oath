@@ -36,6 +36,15 @@ func set_entries(entries: Array[Dictionary]) -> void:
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		content.add_child(icon)
 		icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		if icon.texture == null:
+			var glyph := Label.new()
+			glyph.text = entry.get("glyph", "?")
+			glyph.add_theme_font_size_override("font_size", 12)
+			glyph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			glyph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			content.add_child(glyph)
+			glyph.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		var count := Label.new()
 		count.add_theme_font_size_override("font_size", 14)
 		count.add_theme_color_override("font_color", Color("C8B89A"))

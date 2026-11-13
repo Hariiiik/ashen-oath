@@ -62,7 +62,7 @@ Events identify:
   refilled row-major snapshots distinguish occupancy across steps.
 - `effect`: the group and applied amount, with HP, Guard, Ward, AP, herbs and
   budget before/after. Each group is processed once per step in row-major order.
-- `shield_bash`, `enemy_action`, `combat_ended`, `undo`: other state changes that
+- `shield_bash`, `emergency_craft_bandage`, `use_bandage`, `enemy_action`, `combat_ended`, `undo`: other state changes that
   could explain a displayed total or terminal cleanup.
 
 Logging does not consume RNG, invoke actions or change the resulting board.
@@ -94,7 +94,7 @@ first successful action, including a Shield Bash used before the swap:
 - Every scalar combat/ability state field: player/enemy HP and maxima, enemy armor,
   Guard, Ward, AP, herb budget, phase, turn, valid-swap count, enemy action count
   and announced intent.
-- Run herb quantity, restoring the existing inventory object rather than replacing
+- Run Herb and Bandage quantities, restoring the existing inventory object rather than replacing
   it. The current ability has no independent cooldown/use flag; its availability
   is derived from restored resources and phase.
 - Controller step cursor. Pending resolution is cleared because a pre-turn

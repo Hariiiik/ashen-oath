@@ -4,6 +4,28 @@ Open `scenes/combat/combat_screen.tscn` in Godot 4 and press **F6**.
 Alternatively: `godot --path . res://scenes/combat/combat_screen.tscn`.
 The existing foundation boot scene remains available through F5.
 
+## Emergency crafting and Bandage (Milestone 4B)
+
+The Consumables area has **Craft Bandage / 6 Herbs** (no AP cost) and **Use Bandage
+×N / 2 AP** (provisional healing: up to 12 HP). Both work before the board swap
+and in the post-match decision window; neither changes swap allowance or starts
+the enemy action. Resolution, enemy action and combat outcomes block both.
+Use is disabled without a Bandage, with insufficient AP, or at full HP to avoid
+wasting an item. Hover previews two AP segments, even when use is unavailable.
+
+The inventory shows live Herb and Bandage stacks; Bandage's BND glyph is temporary
+native UI rather than final art. The scene exposes `run_inventory` for the run
+owner to inject before `_ready`; reuse it across encounters to preserve both
+stacks. Launching a standalone scene without injection starts a fresh inventory.
+No automatic encounter progression or preparation screen is added.
+
+The standard recipe is 4 Herbs as a design reference only. Normal crafting is not
+available after every room; preparation is intended between runs, with future
+special crafting/safe rooms possible. Neither is implemented. Undo restores both
+stacks along with HP and AP after crafting/usage.
+
+Tests: `godot --headless --path . --script tests/bandage_test.gd`.
+
 Debug builds also expose **DEBUG / Undo Last Turn**, restoring the pre-turn state
 once, including after victory/defeat; it is disabled during resolution/playback.
 `debug_match_logging` enables detailed group/cascade/effect traces in Godot Output.
@@ -81,8 +103,9 @@ to larger 16:9 windows. Nearest filtering and the provisional PNG tile art remai
 - `scripts/ui/inventory_grid.gd`: scrollable three-column view accepts item
   dictionaries (`id`, `name`, `description`, `texture`, `quantity`) and updates
   stacks through `set_quantity()`. The herb bundle uses the provisional Herb PNG
-  and live run count. Empty slots reserve space for future item types; no loot,
-  use, crafting or inventory rules are implemented. Scrolling appears when the
+  and live run count. A BND glyph displays the Bandage stack. Empty slots reserve
+  future item types; only emergency Bandage crafting/use is implemented, with no loot
+  or other recipes. Scrolling appears when the
   entries exceed available space.
 - Combat feedback and turn labels stay below the board. Long feedback is clipped
   to preserve the layout, with the full report on hover after resolution.
@@ -156,7 +179,8 @@ The UI smoke test above also exercises rollback, valid swaps, input locking,
 live HP/resources, enemy retaliation, terminal input locks, and victory/defeat.
 
 Remaining work: balance testing, approved pixel art and visual review in a window.
-Crafting, item usage, other abilities, equipment stats, additional classes/enemies,
-Hub and procedural dungeon remain outside this slice. AP can be spent on Shield
-Bash; herbs cannot yet be spent. Visual playback uses brief clear/refill steps rather
+Standard/between-battle crafting, preparation, safe rooms, other item usage/abilities,
+equipment stats, additional classes/enemies, Hub and procedural dungeon remain
+outside this slice. AP can be spent on Shield Bash or Bandage use, and Herbs on
+emergency Bandage crafting. Visual playback uses brief clear/refill steps rather
 than sliding tile animations. There is no in-game restart or save system.

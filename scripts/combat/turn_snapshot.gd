@@ -8,6 +8,7 @@ var board_cells: Array[int] = []
 var rng_seed: int
 var rng_state: int
 var herbs: int
+var bandages: int
 var next_step: int
 
 
@@ -22,6 +23,7 @@ func capture(state: State, board: Board, step: int) -> void:
 	rng_seed = board.rng.seed
 	rng_state = board.rng.state
 	herbs = state.run_inventory.herbs
+	bandages = state.run_inventory.bandages
 	next_step = step
 
 
@@ -33,3 +35,4 @@ func restore(state: State, board: Board) -> void:
 		state.set(key, combat_values[key])
 	# Retain the run-owned inventory object's identity for other adapters.
 	state.run_inventory.herbs = herbs
+	state.run_inventory.bandages = bandages

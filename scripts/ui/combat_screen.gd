@@ -10,6 +10,7 @@ const RULES = preload("res://scripts/combat/combat_rules.gd")
 const ENEMY_STAGE = preload("res://scripts/ui/enemy_stage.gd")
 const METER = preload("res://scripts/ui/segmented_meter.gd")
 const INVENTORY = preload("res://scripts/ui/inventory_grid.gd")
+const RUN_INVENTORY = preload("res://scripts/combat/run_inventory.gd")
 signal board_resolved(result: BOARD.SwapResult)
 @export var board_seed: int = 1
 @export var debug_match_logging: bool = true
@@ -44,10 +45,17 @@ var status_icons: Array[Button] = []
 var shield_bash_button: Button
 var end_turn_button: Button
 var debug_undo_button: Button
+var craft_bandage_button: Button
+var use_bandage_button: Button
+# The run owner can inject the same object into each encounter scene before _ready.
+# A standalone F6 launch creates a fresh run inventory; no global/meta inventory.
+var run_inventory: RUN_INVENTORY
 
 
 func _ready() -> void:
-	combat = COMBAT.new(board_seed)
+	if run_inventory == null:
+		run_inventory = RUN_INVENTORY.new()
+	combat = COMBAT.new(board_seed, run_inventory)
 	combat.diagnostics_enabled = debug_match_logging
 	board = combat.board
 	theme = _make_theme()
@@ -300,7 +308,7 @@ func _on_tile_pressed(index: int) -> void:
 			feedback.text = "No legal moves remained. Board reshuffled."
 		combat.finish_player_resolution()
 		if combat.state.phase == STATE.Phase.POST_MATCH:
-			feedback.text = "Swap complete. Use Shield Bash or End Turn."
+			feedback.text = "Swap complete. Use abilities/items or End Turn."
 	_refresh(result.final_cells)
 	for tile: Button in tiles:
 		tile.disabled = combat.state.phase != STATE.Phase.PLAYER_INPUT
@@ -345,11 +353,35 @@ func _on_end_turn_pressed() -> void:
 	_sync_state()
 
 
+func _on_craft_bandage_pressed() -> void:
+	if resolving:
+		return
+	var report: Dictionary = combat.emergency_craft_bandage()
+	if not report.valid:
+		return
+	feedback.text = "Bandage crafted: -%d Herbs / +1 Bandage. No AP spent." % report.herbs_spent
+	feedback.tooltip_text = feedback.text
+	_sync_state()
+
+
+func _on_use_bandage_pressed() -> void:
+	if resolving:
+		return
+	var report: Dictionary = combat.use_bandage()
+	if not report.valid:
+		return
+	feedback.text = "Bandage used: +%d HP / -%d AP / -1 Bandage." % [report.healed, report.ap_spent]
+	feedback.tooltip_text = feedback.text
+	_sync_state()
+
+
 func _sync_action_availability() -> void:
 	for tile: Button in tiles:
 		tile.disabled = resolving or combat.state.phase != STATE.Phase.PLAYER_INPUT
 	shield_bash_button.disabled = resolving or not combat.can_shield_bash()
 	end_turn_button.disabled = resolving or combat.state.phase != STATE.Phase.POST_MATCH
+	craft_bandage_button.disabled = resolving or not combat.can_emergency_craft_bandage()
+	use_bandage_button.disabled = resolving or not combat.can_use_bandage()
 	if is_instance_valid(debug_undo_button):
 		debug_undo_button.disabled = resolving or not combat.can_debug_undo()
 
@@ -382,9 +414,11 @@ func _sync_state() -> void:
 	status_icons[1].tooltip_text = "Ward: %d. Persists until consumed or combat ends." % state.ward
 	status_icons[0].modulate = Color.WHITE if state.guard > 0 else Color("53606A")
 	status_icons[1].modulate = Color.WHITE if state.ward > 0 else Color("53606A")
-	herbs_label.text = "Run herbs  %d" % state.run_inventory.herbs
+	herbs_label.text = "Herbs %d / Bandages %d" % [state.run_inventory.herbs, state.run_inventory.bandages]
 	budget_label.text = "Herb budget left  %d" % state.herb_budget
 	inventory.set_quantity("herb", state.run_inventory.herbs)
+	inventory.set_quantity("bandage", state.run_inventory.bandages)
+	use_bandage_button.text = "Use Bandage ×%d / 2 AP" % state.run_inventory.bandages
 	intent_label.text = "Attack for %d damage" % state.enemy_intent if not state.is_finished() else "Combat ended"
 	intent_label.tooltip_text = intent_label.text
 	turn_label.text = "TURN %02d / %s" % [state.turn, STATE.Phase.keys()[state.phase].replace("_", " ")]
@@ -436,10 +470,27 @@ func _build_loadout(column: VBoxContainer) -> void:
 		debug_undo_button.pressed.connect(_on_debug_undo_pressed)
 		column.add_child(debug_undo_button)
 	_label(column, "CONSUMABLES", 16)
-	_placeholder(column, "Reserved / —")
+	craft_bandage_button = Button.new()
+	craft_bandage_button.text = "Craft Bandage / 6 Herbs"
+	craft_bandage_button.add_theme_font_size_override("font_size", 14)
+	craft_bandage_button.tooltip_text = "Emergency crafting: consume 6 Herbs to make 1 Bandage. No AP cost."
+	craft_bandage_button.pressed.connect(_on_craft_bandage_pressed)
+	column.add_child(craft_bandage_button)
+	use_bandage_button = Button.new()
+	use_bandage_button.add_theme_font_size_override("font_size", 14)
+	use_bandage_button.tooltip_text = "Use 1 Bandage to restore up to 12 HP. Costs 2 AP. Unavailable at full HP."
+	use_bandage_button.mouse_entered.connect(_preview_ap.bind(RULES.BANDAGE_AP_COST))
+	use_bandage_button.mouse_exited.connect(_preview_ap.bind(0))
+	use_bandage_button.focus_entered.connect(_preview_ap.bind(RULES.BANDAGE_AP_COST))
+	use_bandage_button.focus_exited.connect(_preview_ap.bind(0))
+	use_bandage_button.pressed.connect(_on_use_bandage_pressed)
+	column.add_child(use_bandage_button)
 	_label(column, "INVENTORY", 16)
 	inventory = INVENTORY.new()
 	column.add_child(inventory)
-	inventory.set_entries([{"id": "herb", "name": "Herb bundle", "description": "Collected herbs. Materials only; no automatic healing.", "texture": preload("res://assets/tiles/herb.png"), "quantity": 0}])
-	herbs_label = _label(column, "")
+	inventory.set_entries([
+		{"id": "herb", "name": "Herb bundle", "description": "Collected herbs. Materials only; no automatic healing.", "texture": preload("res://assets/tiles/herb.png"), "quantity": 0},
+		{"id": "bandage", "name": "Bandage", "description": "Bandage: up to 12 HP for 2 AP. Emergency recipe: 6 Herbs.", "glyph": "BND", "quantity": 0}
+	])
+	herbs_label = _label(column, "", 14)
 	budget_label = _label(column, "", 14)
