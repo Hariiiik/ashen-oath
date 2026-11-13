@@ -62,6 +62,47 @@ it does not complete the whole Light RPG milestone or approve another ability.
 - [ ] 1-2 abilities, early gear modifiers, data-driven content (requires separately scoped design/implementation work).
 - Later crafting/consumable work follows the GDD: run-persistent herbs, normal between-battle crafting, increased-cost emergency crafting, manual healing item activation using shared ability/consumable AP. Bandage material costs are 4/6 herbs; healing and activation AP amounts remain provisional. Crafting AP cost is an unapproved proposal. No implementation is requested now.
 
+## Milestone 4B — Combat Balance & Playtesting
+
+Status: **PLANNED / NOT STARTED**. Future combat evaluation after the core
+encounter/Shield Bash slice and before expanding into the simple run. Existing
+milestone numbers are preserved. This plan authorizes no implementation or
+balance changes now; all work below remains pending.
+
+### Combat analytics
+
+- [ ] Record average turns per battle and player damage taken per encounter.
+- [ ] Separate Sword damage from Shield Bash damage and measure Shield Bash usage frequency.
+- [ ] Track Guard generated, consumed (including absorption and Shield Bash) and expired unused.
+- [ ] Track Ward generated and consumed.
+- [ ] Track AP generated, spent and wasted; distinguish cap overflow from AP left unspent at combat end.
+- [ ] Measure herb collection efficiency against the encounter collection budget, distinguishing collected materials from matches after exhaustion.
+
+### Balance testing
+
+- [ ] Compare offensive and defensive playstyles under reproducible encounter conditions.
+- [ ] Evaluate Shield Bash effectiveness and its current approved 3 AP cost without treating evaluation as approval to change it.
+- [ ] Evaluate the Sword, Shield, Herb and Action tile economy, Match-3/4/5 rewards and cascade effects.
+- [ ] Identify dominant strategies and ineffective mechanics from measured results.
+- [ ] Test encounters against different enemy attack patterns in future scoped test scenarios; do not implement new enemies or patterns as part of this documentation task.
+
+### Balance tools
+
+- [ ] Add developer-only combat statistics when this milestone is explicitly started.
+- [ ] Use fixed random seeds for reproducible tests and comparisons.
+- [ ] Integrate the existing Debug Undo where available, restoring pre-turn board/RNG/resources for replay; distinguish replayed attempts from independent encounters in analytics.
+- [ ] Make prototype balance values configurable for controlled experiments, without changing current values now or silently overriding approved rules.
+
+### Balance iteration
+
+- [ ] Collect playtesting results and identify specific balance problems.
+- [ ] Propose numerical adjustments with supporting evidence; preserve approved mechanics unless explicitly changed by the user.
+- [ ] After the appropriate approval, compare before/after results using the same seeds and scenarios, and document conclusions.
+
+No analytics, statistics UI, configurable balance tools, new tests or Shield Bash
+rebalance are implemented by adding this milestone. Current combat values and
+the approved 3 AP Shield Bash cost remain unchanged.
+
 ## Milestone 5 — Simple run
 Status: not implemented. The shared in-memory herb inventory is only an extension point, not a run loop.
 
