@@ -4,6 +4,13 @@ Open `scenes/combat/combat_screen.tscn` in Godot 4 and press **F6**.
 Alternatively: `godot --path . res://scenes/combat/combat_screen.tscn`.
 The existing foundation boot scene remains available through F5.
 
+Debug builds also expose **DEBUG / Undo Last Turn**, restoring the pre-turn state
+once, including after victory/defeat; it is disabled during resolution/playback.
+`debug_match_logging` enables detailed group/cascade/effect traces in Godot Output.
+See [DEBUG_COMBAT.md](DEBUG_COMBAT.md) for snapshot boundaries, the Shield-cross
+investigation and a reproducible 12-Guard cascade. No T/L policy or balance changes
+are introduced by these tools.
+
 Headless layout/selection check:
 `godot --headless --path . --script tests/combat_ui_smoke.gd`.
 

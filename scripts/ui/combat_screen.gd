@@ -12,6 +12,7 @@ const METER = preload("res://scripts/ui/segmented_meter.gd")
 const INVENTORY = preload("res://scripts/ui/inventory_grid.gd")
 signal board_resolved(result: BOARD.SwapResult)
 @export var board_seed: int = 1
+@export var debug_match_logging: bool = true
 var feedback: Label
 var turn_label: Label
 var board: BOARD
@@ -42,10 +43,12 @@ var ability_previews: Array[Button] = []
 var status_icons: Array[Button] = []
 var shield_bash_button: Button
 var end_turn_button: Button
+var debug_undo_button: Button
 
 
 func _ready() -> void:
 	combat = COMBAT.new(board_seed)
+	combat.diagnostics_enabled = debug_match_logging
 	board = combat.board
 	theme = _make_theme()
 	var background := ColorRect.new()
@@ -347,6 +350,20 @@ func _sync_action_availability() -> void:
 		tile.disabled = resolving or combat.state.phase != STATE.Phase.PLAYER_INPUT
 	shield_bash_button.disabled = resolving or not combat.can_shield_bash()
 	end_turn_button.disabled = resolving or combat.state.phase != STATE.Phase.POST_MATCH
+	if is_instance_valid(debug_undo_button):
+		debug_undo_button.disabled = resolving or not combat.can_debug_undo()
+
+
+func _on_debug_undo_pressed() -> void:
+	if resolving or not combat.debug_undo_last_turn():
+		return
+	selected = -1
+	moves = combat.state.valid_swaps
+	ap_meter.set_preview(0)
+	_refresh(board.cells)
+	_sync_state()
+	feedback.text = "DEBUG: Previous turn restored. Replay uses the same RNG."
+	feedback.tooltip_text = feedback.text
 
 
 func _sync_state() -> void:
@@ -411,6 +428,13 @@ func _build_loadout(column: VBoxContainer) -> void:
 	end_turn_button.tooltip_text = "After your swap, finish the turn and let the enemy act."
 	end_turn_button.pressed.connect(_on_end_turn_pressed)
 	column.add_child(end_turn_button)
+	if combat.developer_tools_enabled:
+		debug_undo_button = Button.new()
+		debug_undo_button.text = "DEBUG / Undo Last Turn"
+		debug_undo_button.add_theme_font_size_override("font_size", 13)
+		debug_undo_button.tooltip_text = "Developer only. Restore the state before the last turn's first valid action. One checkpoint; no redo."
+		debug_undo_button.pressed.connect(_on_debug_undo_pressed)
+		column.add_child(debug_undo_button)
 	_label(column, "CONSUMABLES", 16)
 	_placeholder(column, "Reserved / —")
 	_label(column, "INVENTORY", 16)

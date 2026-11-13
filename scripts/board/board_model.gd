@@ -9,6 +9,8 @@ class MatchGroup extends RefCounted:
 	var tile: int
 	var cells: Array[int] = []
 	var longest_run: int
+	# Diagnostic metadata only; reward classification still uses longest_run.
+	var runs: Array[Dictionary] = []
 	# 5 represents Match-5+, not a deferred special tile.
 	var rank: int:
 		get:
@@ -129,6 +131,7 @@ func find_matches() -> Array[MatchGroup]:
 					group.longest_run = end - start
 					for pos: int in range(start, end):
 						group.cells.append(pos * SIZE + line if vertical else line * SIZE + pos)
+					group.runs.append({"orientation": "vertical" if vertical else "horizontal", "length": end - start, "cells": group.cells.duplicate()})
 					# Merge every intersecting run, including bridges between groups.
 					for i: int in range(groups.size() - 1, -1, -1):
 						var intersects: bool = false
@@ -137,6 +140,7 @@ func find_matches() -> Array[MatchGroup]:
 								intersects = true
 								break
 						if intersects:
+							group.runs.append_array(groups[i].runs)
 							group.longest_run = maxi(group.longest_run, groups[i].longest_run)
 							for cell: int in groups[i].cells:
 								if cell not in group.cells:
@@ -201,3 +205,34 @@ func try_swap(a: Vector2i, b: Vector2i) -> SwapResult:
 	result.reshuffled = ensure_playable()
 	result.final_cells = cells.duplicate()
 	return result
+
+
+static func diagnostic_positions(indices: Array[int]) -> Array[Vector2i]:
+	var positions: Array[Vector2i] = []
+	for cell: int in indices:
+		positions.append(Vector2i(cell % SIZE, floori(cell / float(SIZE))))
+	return positions
+
+
+static func describe_group(group: MatchGroup) -> Dictionary:
+	var runs: Array[Dictionary] = []
+	var raw_count: int = 0
+	for run: Dictionary in group.runs:
+		var indices: Array[int] = run.cells
+		raw_count += indices.size()
+		runs.append({"orientation": run.orientation, "length": run.length, "positions": diagnostic_positions(indices)})
+	return {"group_id": group.cells[0] if not group.cells.is_empty() else -1, "tile": Tile.keys()[group.tile], "rank": group.rank, "longest_run": group.longest_run, "unique_count": group.cells.size(), "positions": diagnostic_positions(group.cells), "raw_runs": runs, "shared_run_cells": maxi(0, raw_count - group.cells.size())}
+
+
+static func describe_step(step: CascadeStep) -> Dictionary:
+	var groups: Array[Dictionary] = []
+	var unique: Array[int] = []
+	var count: int = 0
+	for group: MatchGroup in step.matches:
+		groups.append(describe_group(group))
+		for cell: int in group.cells:
+			count += 1
+			if cell not in unique:
+				unique.append(cell)
+	unique.sort()
+	return {"cascade": step.index, "groups": groups, "unique_positions": diagnostic_positions(unique), "unique_count": unique.size(), "duplicate_group_cells": count - unique.size(), "cleared": step.cleared.duplicate(), "refilled": step.refilled.duplicate()}

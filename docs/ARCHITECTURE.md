@@ -83,6 +83,16 @@ There is no cooldown or once-per-turn flag. The UI additionally blocks activatio
 throughout visual playback, including the brief swap preview before model resolution.
 
 ## Determinism and testing
+
+Developer-only diagnostics and one-turn Undo are described in
+`DEBUG_COMBAT.md`. `turn_snapshot.gd` captures the stable state before the first
+successful action of a turn, including pre-swap Shield Bash, and restores board,
+RNG, scalar combat/ability fields and run herbs without replaying effects. Undo
+is forbidden during resolution/enemy action but allowed after victory/defeat;
+the UI additionally gates visual playback. These are debug facilities, not combat
+rules or player rewind mechanics. Raw match-run metadata supports diagnosis
+without changing grouping/ranking or balance.
+
 - Seed board generation for replayable tests.
 - When gameplay is implemented, test match detection, cascades, dead boards, invalid swaps, basic Match-3 and immediate Match-4/5 effects, intent, HP, Guard expiry, Ward consumption/end-of-combat clearing, manual healing/AP use, and herb budget exhaustion without tile removal. Verify run-persistent herbs and that AP cannot buy swaps. Do not encode unresolved rewards or balance as approved behavior.
 - The first automated test suite may use lightweight Godot headless test scripts; add a test framework only if its maintenance is justified.
