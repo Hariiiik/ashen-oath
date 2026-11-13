@@ -65,40 +65,15 @@ Status: partially implemented through Milestones 4A and 4B; equipment effects an
 The Shield Bash slice implements only the expressly approved ability rules;
 it does not complete the whole Light RPG milestone or approve another ability.
 
-- [ ] Early gear modifiers and data-driven RPG content remain future, separately scoped work; the first active ability is complete in 4A and a second is not authorized by the placeholder slot.
-- Standard Bandage cost is 4 Herbs, but normal crafting is not automatically available between regular encounters. Preparation is intended between runs; future special crafting/safe rooms require separate design/implementation. No Preparation Screen after victory, Hub or meta-inventory is authorized.
-
-### Milestone 4B — Emergency Crafting & Bandage
-
-Status: implemented in the current working tree and automatically tested; manual acceptance pending. Not committed at this review checkpoint.
-
-- [x] One emergency recipe: consume 6 Herbs for 1 Bandage during a player action window, with no AP cost.
-- [x] Manual Bandage use: consume one stacked item and a provisional 2 AP for a provisional 12 HP, clamped to max HP.
-- [x] Shared run inventory holds Herbs/Bandages across encounter controllers/scenes; new runs use a fresh inventory. No run-progression changes or disk/meta-inventory.
-- [x] Pre-swap/post-match timing, unchanged board-swap allowance and enemy intent; no actions during resolution/enemy action/outcomes.
-- [x] Live inventory quantities, craft/use buttons, 2-segment AP hover preview, debug logging and complete Undo restoration of both stacks.
-- [x] Automated resource, healing, inventory persistence, timing, UI and regression checks (62 Bandage checks passed, plus existing suites).
-- [ ] Manual acceptance/playtest of crafting and healing with naturally collected Herbs/AP.
-
-No standard/between-battle crafting, preparation UI, safe rooms, other recipes,
-consumables, equipment effects or loot generation are implemented by this slice.
-
-## Milestone 5 — Simple run
-Status: not implemented. Shared in-memory Herbs/Bandages persist through explicit inventory injection; this is not a run loop or automatic encounter progression.
-
-- [ ] Handful of rooms, rewards, failure, replay and basic seed/saves. Hub later.
+- [ ] 1-2 abilities, early gear modifiers, data-driven content (requires separately scoped design/implementation work).
+- Later crafting/consumable work follows the GDD: run-persistent herbs, normal between-battle crafting, increased-cost emergency crafting, manual healing item activation using shared ability/consumable AP. Bandage material costs are 4/6 herbs; healing and activation AP amounts remain provisional. Crafting AP cost is an unapproved proposal. No implementation is requested now.
 
 ## Milestone 6 — Combat Balance & Playtesting
 
-Status: **PLANNED / NOT STARTED**. Scheduled after Milestone 5. The earlier balance
-identifier 4B is now assigned to the explicitly requested Emergency Crafting &
-Bandage slice; this future milestone becomes 6 to avoid duplicate numbering. Full balancing
-should begin only once the core RPG mechanics, crafting, equipment interactions
-and basic run loop are playable, so their combined combat economy can be tested.
-Until then, development should address only critical balance issues and obvious
-gameplay exploits; routine numerical tuning and comprehensive balancing are
-deferred to this milestone. This plan authorizes no implementation or balance
-changes now; all work below remains pending.
+Status: **PLANNED / NOT STARTED**. Future combat evaluation after the core
+encounter/Shield Bash slice and before expanding into the simple run. Existing
+milestone numbers are preserved. This plan authorizes no implementation or
+balance changes now; all work below remains pending.
 
 ### Combat analytics
 
