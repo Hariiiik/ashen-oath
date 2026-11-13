@@ -62,12 +62,21 @@ it does not complete the whole Light RPG milestone or approve another ability.
 - [ ] 1-2 abilities, early gear modifiers, data-driven content (requires separately scoped design/implementation work).
 - Later crafting/consumable work follows the GDD: run-persistent herbs, normal between-battle crafting, increased-cost emergency crafting, manual healing item activation using shared ability/consumable AP. Bandage material costs are 4/6 herbs; healing and activation AP amounts remain provisional. Crafting AP cost is an unapproved proposal. No implementation is requested now.
 
+## Milestone 5 — Simple run
+Status: not implemented. The shared in-memory herb inventory is only an extension point, not a run loop.
+
+- [ ] Handful of rooms, rewards, failure, replay and basic seed/saves. Hub later.
+
 ## Milestone 4B — Combat Balance & Playtesting
 
-Status: **PLANNED / NOT STARTED**. Future combat evaluation after the core
-encounter/Shield Bash slice and before expanding into the simple run. Existing
-milestone numbers are preserved. This plan authorizes no implementation or
-balance changes now; all work below remains pending.
+Status: **PLANNED / NOT STARTED**. Scheduled after Milestone 5; the existing 4B
+identifier is retained to avoid renumbering existing milestones. Full balancing
+should begin only once the core RPG mechanics, crafting, equipment interactions
+and basic run loop are playable, so their combined combat economy can be tested.
+Until then, development should address only critical balance issues and obvious
+gameplay exploits; routine numerical tuning and comprehensive balancing are
+deferred to this milestone. This plan authorizes no implementation or balance
+changes now; all work below remains pending.
 
 ### Combat analytics
 
@@ -102,11 +111,6 @@ balance changes now; all work below remains pending.
 No analytics, statistics UI, configurable balance tools, new tests or Shield Bash
 rebalance are implemented by adding this milestone. Current combat values and
 the approved 3 AP Shield Bash cost remain unchanged.
-
-## Milestone 5 — Simple run
-Status: not implemented. The shared in-memory herb inventory is only an extension point, not a run loop.
-
-- [ ] Handful of rooms, rewards, failure, replay and basic seed/saves. Hub later.
 
 ## Next review gate
 
