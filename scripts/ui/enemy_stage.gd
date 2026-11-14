@@ -1,8 +1,9 @@
 extends HBoxContainer
 ## Visual slots only: no targeting, enemy list, or additional combat state.
-const PORTRAIT = preload("res://scripts/ui/placeholder_portrait.gd")
+const ACTOR_VIEW = preload("res://scripts/ui/actor_view.gd")
 signal slots_changed
 var cards: Array[Control] = []
+var actor_views: Array[ACTOR_VIEW] = []
 var primary_hp_label: Label
 var primary_hp_bar: ProgressBar
 var primary_intent: Label
@@ -21,15 +22,16 @@ func set_enemy_count(count: int) -> void:
 		remove_child(child)
 		child.queue_free()
 	cards.clear()
+	actor_views.clear()
 	for index: int in range(clampi(count, 1, 3)):
 		var card := HBoxContainer.new()
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(card)
 		cards.append(card)
-		var art := Control.new()
-		art.set_script(PORTRAIT)
-		art.set("enemy", true)
+		var art := ACTOR_VIEW.new()
+		art.enemy = true
+		actor_views.append(art)
 		art.custom_minimum_size.x = 86 if count > 1 else 170
 		art.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		art.mouse_filter = Control.MOUSE_FILTER_IGNORE

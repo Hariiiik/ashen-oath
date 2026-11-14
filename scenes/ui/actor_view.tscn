@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/actor_view.gd" id="1"]
+
+[node name="ActorView" type="Control"]
+mouse_filter = 2
+texture_filter = 1
+clip_contents = true
+script = ExtResource("1")
