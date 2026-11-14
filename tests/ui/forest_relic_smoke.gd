@@ -61,7 +61,7 @@ func _run() -> void:
 		var viewport := Rect2(Vector2.ZERO, Vector2(resolution))
 		var panels: Array[PanelContainer] = []
 		for child: Node in screen.get_children():
-			if child is PanelContainer:
+			if child is PanelContainer and child.theme_type_variation in ["RelicHeroPanel", "RelicCenterPanel", "RelicLoadoutPanel"]:
 				panels.append(child)
 		_check(panels.size() == 3, "Exactly three main panel frames")
 		for index: int in range(3):
@@ -69,7 +69,7 @@ func _run() -> void:
 			_check(panel.get_theme_stylebox("panel") is StyleBoxTexture, "Main panel uses supplied texture")
 			_check(panel.offset_left == 8 and panel.offset_right == -8 and panel.offset_top == 12 and panel.offset_bottom == -12, "Original outer margins")
 			_check(viewport.encloses(panel.get_global_rect()), "Panel remains in viewport")
-		_check(is_equal_approx(panels[0].anchor_right, 0.2) and is_equal_approx(panels[1].anchor_left, 0.2) and is_equal_approx(panels[1].anchor_right, 0.8) and is_equal_approx(panels[2].anchor_left, 0.8), "Original 20/60/20 anchors")
+		_check(is_equal_approx(panels[0].anchor_right, 0.21875) and is_equal_approx(panels[1].anchor_left, 0.21875) and is_equal_approx(panels[1].anchor_right, 0.78125) and is_equal_approx(panels[2].anchor_left, 0.78125), "Reference side columns and centered board")
 		_check(screen.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST, "Skin inherits nearest filtering")
 		_check(screen.tiles[0].get_theme_stylebox("normal") is StyleBoxFlat, "No decorative button border on board tiles")
 		for badge: Button in screen.status_icons:
@@ -82,7 +82,7 @@ func _run() -> void:
 		_check(screen.ap_meter.preview_cost == 3 and "insufficient" in screen.ap_label.text, "Unavailable ability still previews AP cost")
 		screen.shield_bash_button.mouse_exited.emit()
 		for cell: Node in screen.inventory.grid.get_children():
-			_check((cell as PanelContainer).get_theme_stylebox("panel") is StyleBoxTexture, "Inventory cell uses slot art")
+			_check((cell as PanelContainer).get_theme_stylebox("panel") is StyleBoxFlat and screen.inventory.grid.get_theme_constant("h_separation") == 0, "Inventory cells share joined leather surface")
 		_check(screen.inventory.cells.herb.text == "×0" and screen.inventory.cells.bandage.text == "×0", "Stack counts remain visible")
 		_check(viewport.encloses(screen.budget_label.get_global_rect()) and viewport.encloses(screen.feedback.get_global_rect()), "Footer and combat feedback fit")
 		_check(SKIN.segment_texture("empty").get_width() == 32 and SKIN.segment_texture("empty").get_height() == 32, "Empty segment excludes atlas strip and uses square padding")

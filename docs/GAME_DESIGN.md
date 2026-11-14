@@ -20,9 +20,9 @@ A single-player Windows PC grimdark pixel-art roguelite. The player fights monst
 ## Combat screen layout (approved)
 - **Top-center:** large enemy artwork, HP and next-action intent. Enemy may overlap *decorative* UI borders, never interactive board tiles/buttons/text.
 - **Center-below-enemy:** Match-3 board; initially 7 columns x 7 rows.
-- **Left:** hero portrait, current/max HP, attack/defense, statuses, run level.
-- **Right:** equipment summary, equipped slots and active ability buttons/resources.
-- Bottom edge: turn/feedback and controls as needed.
+- **Left:** framed hero portrait with class/level plaque (no standalone hero name), current/max HP, joined segmented Guard/Ward and AP bars, existing statuses.
+- **Right:** equipment summary, active abilities, shared consumable belt and bag-style run inventory. A nonmodal crafting popup stays within this column and uses only existing emergency-crafting rules.
+- Bottom-center: turn/feedback, with End Turn at the bottom-right below the board. Current approved visual composition: `docs/references/art/ui-reference.png`; mockup values do not replace live state.
 
 ## Turn model (approved)
 1. Show enemy intent before player acts.

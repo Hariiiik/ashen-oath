@@ -92,6 +92,18 @@ func _init() -> void:
 	var footer := StyleBoxFlat.new()
 	footer.bg_color = Color("161515")
 	set_stylebox("normal", "RelicFooter", footer)
+	set_type_variation("RelicCombatFooter", "PanelContainer")
+	var combat_footer := StyleBoxFlat.new()
+	combat_footer.bg_color = Color("161515")
+	combat_footer.border_color = Color("53606A")
+	combat_footer.border_width_top = 1
+	combat_footer.content_margin_top = 2
+	set_stylebox("panel", "RelicCombatFooter", combat_footer)
+	var focus := StyleBoxFlat.new()
+	focus.bg_color = Color.TRANSPARENT
+	focus.border_color = Color("C8B89A")
+	focus.set_border_width_all(1)
+	set_stylebox("focus", "Button", focus)
 	set_stylebox("panel", "RelicInventorySlot", _box("slots/inventory_slot.png", Rect2i(3, 3, 179, 180), 4, Vector4(8, 10, 8, 8)))
 	set_type_variation("RelicEquipmentSlot", "Button")
 	set_type_variation("CompactButton", "Button")

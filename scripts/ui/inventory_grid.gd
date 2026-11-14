@@ -12,8 +12,8 @@ func _ready() -> void:
 	grid = GridContainer.new()
 	grid.columns = 3
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	grid.add_theme_constant_override("h_separation", 4)
-	grid.add_theme_constant_override("v_separation", 4)
+	grid.add_theme_constant_override("h_separation", 0)
+	grid.add_theme_constant_override("v_separation", 0)
 	add_child(grid)
 
 
@@ -70,7 +70,17 @@ func set_entries(entries: Array[Dictionary]) -> void:
 
 func _cell() -> PanelContainer:
 	var cell := PanelContainer.new()
-	cell.theme_type_variation = "RelicInventorySlot"
+	# Temporary matte leather recesses share edges instead of floating art tiles.
+	var surface := StyleBoxFlat.new()
+	surface.bg_color = Color("30251E")
+	surface.border_color = Color("66503A")
+	surface.border_width_right = 1
+	surface.border_width_bottom = 1
+	surface.content_margin_left = 4
+	surface.content_margin_right = 4
+	surface.content_margin_top = 4
+	surface.content_margin_bottom = 4
+	cell.add_theme_stylebox_override("panel", surface)
 	cell.custom_minimum_size = Vector2(58, 58)
 	cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.add_child(cell)

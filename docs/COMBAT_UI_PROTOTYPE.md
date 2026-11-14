@@ -42,7 +42,7 @@ are introduced by these tools.
 Headless layout/selection check:
 `godot --headless --path . --script tests/combat_ui_smoke.gd`.
 
-The screen uses the project's 1280×720 reference resolution with 20/60/20
+The screen uses the project's 1280×720 reference resolution with approximately 22/56/22
 percent columns, a shared charcoal/crimson/bone/gold theme, reusable board
 tiles, and geometric portrait placeholders. Select one tile, then an orthogonally
 adjacent tile to swap. Re-click to deselect; a distant click selects a different
@@ -79,33 +79,45 @@ window has no automatic delay/timeout. The next turn restores board input.
 
 ## Modular presentation layout
 
-The screen retains 20/60/20 hero/center/loadout zones. At the 1280x720 reference
+The screen follows `references/art/ui-reference.png` with approximately 22/56/22
+hero/center/loadout zones. At the 1280x720 reference
 size the board uses 52px square hitboxes (388px board including gaps), compared
 with the earlier 40px tiles. At a logical 1920x1080 it uses 94px tiles (682px
 board). These are responsive layout results, not asset production specifications.
 The normal canvas-items stretch mode also supports scaling the reference layout
 to larger 16:9 windows. Nearest filtering and the provisional PNG tile art remain.
 
-- `scripts/ui/enemy_stage.gd`: a clipped, mouse-ignoring visual stage supports
+- `scripts/ui/enemy_stage.gd`: a mouse-ignoring visual stage supports
   `set_enemy_count(1..3)`. Only its first card binds the existing enemy state;
   extra cards are explicitly previews, without combat actors or targeting. Slot
   changes rebind the live primary labels. A dedicated 80px clearance region
-  separates the stage from the board; artwork must remain within stage bounds.
-- Hero portrait height grows from 172px to 320px at reference size (480px at
-  logical 1080p). The silhouette remains temporary native art. Compact G/W/empty
+  separates the stage from the board. The artwork view may extend 32px below its
+  frame into this clearance, without reaching interactive board cells. Artwork
+  and info have separate frames; both remain pointer-transparent.
+- Hero frame height is 350px at reference size (525px at logical 1080p), with an
+  inset ActorView and an integrated class/level plaque. There is no standalone
+  hero name. The silhouette remains temporary native art. Compact G/W/empty
   status badges expose descriptions and exact live counts through tooltips.
 - `scripts/ui/segmented_meter.gd`: six muted yellow/olive AP segments use Rotting
-  Leaf and Bone highlights from the approved palette. Shield Bash previews its
+  Leaf and Bone highlights from the approved palette. Plates form a continuous
+  joined bar, with fixed source caps and one-pixel dividers. Shield Bash previews its
   approved **3 AP** cost; the second slot is locked. Hover or
   keyboard focus outlines required segments; unavailable segments receive rust
   crosses and an explicit insufficient-AP label. Hover spends nothing; a valid
   Shield Bash click spends 3 AP through the combat controller.
-- The same component presents decorative worn iron plates with Guard chainmail
-  patches and a translucent Ward overlay. Each active overlay segment represents
+- The same component presents decorative worn iron plates with Guard texture
+  and a translucent Ward overlay. Each active overlay segment represents
   up to six points, visually saturating above 36; exact Guard/Ward values remain
   in labels/tooltips. The backing plates are not Armor or another resource.
 - Compact equipment slots have full-name hover tooltips; no equipment behavior
   is connected. Reserved ability and consumable areas remain visible.
+- End Turn shares the central footer with turn/feedback, aligned bottom-right
+  below the board. The run still reuses that same button for explicit continuation.
+- `consumables_belt.gd` groups Bandage use and a crafting toggle on one temporary
+  native leather surface. Its nonmodal `crafting_popup.gd` remains inside the
+  right column, stays open through turns/Undo, and routes its only recipe button
+  to the existing crafting handler. Availability follows the same phase/resource
+  gates. `inventory_bag.gd` groups the existing scrollable grid and live totals.
 - `scripts/ui/inventory_grid.gd`: scrollable three-column view accepts item
   dictionaries (`id`, `name`, `description`, `texture`, `quantity`) and updates
   stacks through `set_quantity()`. The herb bundle uses the provisional Herb PNG

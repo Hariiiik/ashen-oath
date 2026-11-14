@@ -38,7 +38,7 @@ func _verify() -> void:
 		_check(viewport.encloses(bounds), "Board fits viewport %s" % resolution)
 		_check(bounds.position.y >= screen.enemy_stage.get_global_rect().end.y + 80, "Looming art clearance")
 		_check(screen.tiles[0].size.x > 40 and screen.tiles[0].size.x == screen.tiles[0].size.y, "Enlarged square tiles")
-		_check(screen.hero_portrait.size.y >= 320, "Substantially enlarged portrait")
+		_check(screen.hero_frame.size.y >= 350, "Large framed portrait with integrated plaque")
 		_check(viewport.encloses(screen.feedback.get_global_rect()), "Combat feedback visible")
 		_check(viewport.encloses(screen.budget_label.get_global_rect()), "Inventory footer visible")
 		for tile: Button in screen.tiles:

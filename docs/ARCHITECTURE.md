@@ -119,6 +119,23 @@ Cross-stream tests: `tests/integration/parallel_streams_test.gd` verifies real U
 actions, controller/inventory/loadout identity, turn flow, Undo/transition races,
 final result revocation, both layout sizes and all board pointer targets.
 
+### Approved-reference UI composition
+
+`hero_portrait.gd` frames the existing ActorView and receives class/level display
+data from the screen. EnemyStage provides separate art/info frames while retaining
+its primary live-state binding API and 1–3 preview-only cards. SegmentedMeter draws
+joined plates without owning AP/Guard/Ward calculations.
+
+`consumables_belt.gd` exposes the single Bandage use button and crafting toggle.
+`crafting_popup.gd` is a nonmodal right-column Control, not a paused scene or a
+fullscreen input catcher. The screen connects its one craft button to the existing
+`_on_craft_bandage_pressed()` handler; no recipe/resource calculation is duplicated.
+Data sync updates labels/availability without closing the panel. Resolution and
+outcome gates remain authoritative in CombatController/Rules and the UI playback
+lock. `inventory_bag.gd` wraps the existing inventory grid and live totals.
+End Turn/Next Encounter uses the same button/handlers at the central footer's
+bottom-right. See `COMBAT_UI_REFERENCE_REWORK.md` for geometry and art gaps.
+
 ## State and input safety
 States: `PLAYER_INPUT`, `RESOLVING_BOARD`, `RESOLVING_EFFECTS`, `POST_MATCH`, `ENEMY_ACTION`, `VICTORY`, `DEFEAT`. Board swaps are accepted only during `PLAYER_INPUT`. Shield Bash is accepted during `PLAYER_INPUT` or `POST_MATCH`, with Guard > 0 and at least 3 AP. All input actions validate phase; do not allow animation callbacks to create extra turns. Mark transitions explicitly.
 

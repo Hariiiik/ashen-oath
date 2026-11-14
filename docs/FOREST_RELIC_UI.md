@@ -1,5 +1,11 @@
 # Forest Relic v2 combat skin
 
+This records the original sprite integration checkpoint. The subsequent approved
+`ui-reference.png` rework supersedes its 20/60/20 layout, floating inventory slots
+and unused-portrait-frame statements. Current composition, component mapping and
+remaining art requirements are in [COMBAT_UI_REFERENCE_REWORK.md](COMBAT_UI_REFERENCE_REWORK.md).
+Source crops/reductions below remain relevant to reused assets.
+
 Presentation integration only. No board textures, algorithms, combat calculations,
 actor art/animation, equipment effects, crafting or encounter progression changed.
 The supplied pack was found at `res://assets/ui/{panels,buttons,slots,meters}/`,

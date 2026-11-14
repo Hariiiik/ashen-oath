@@ -26,6 +26,10 @@ At rest it prefers the optional idle clip, then static texture, then fallback.
 Assets can be replaced at runtime; replacement cancels outstanding playback.
 EnemyStage uses the view for its existing 1–3 **visual-only** slots and retains its
 primary HP/intent API. There is still only one gameplay enemy and no targeting.
+The approved UI reference rework wraps the hero view in `hero_portrait.gd` with
+a frame and class/level plaque. EnemyStage now separates art and information
+frames, extending the actor view 32px below its frame within the reserved clearance.
+ActorView's own clipping/animation behavior remains unchanged.
 
 Textures preserve their source proportions and remain inside their allocated UI
 area. SpriteFrames are uniformly fitted with integer upscaling when they fit at
@@ -65,6 +69,9 @@ native styles for board/status controls and the existing Ward overlay. See
 frame-only panel limitations and render checks. No fonts or final artwork are
 generated. A screen duplicates the Theme for local overrides; layout dimensions
 and resource calculations remain owned by their existing components.
+Current reference composition and the explicitly temporary native leather
+belt/bag/crafting surfaces are described in
+[COMBAT_UI_REFERENCE_REWORK.md](COMBAT_UI_REFERENCE_REWORK.md).
 
 ## Future asset integration checklist
 

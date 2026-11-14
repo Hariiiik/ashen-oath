@@ -2,7 +2,10 @@ extends Control
 ## Combat presentation only. Rules and turn transitions belong to the controller.
 
 const TILE_SCENE: PackedScene = preload("res://scenes/ui/board_tile.tscn")
-const ACTOR_VIEW = preload("res://scripts/ui/actor_view.gd")
+const HERO_FRAME = preload("res://scripts/ui/hero_portrait.gd")
+const BELT = preload("res://scripts/ui/consumables_belt.gd")
+const BAG = preload("res://scripts/ui/inventory_bag.gd")
+const CRAFTING_POPUP = preload("res://scripts/ui/crafting_popup.gd")
 const VISUAL_QUEUE = preload("res://scripts/ui/combat_visual_queue.gd")
 const COMBAT_THEME: Theme = preload("res://scenes/ui/combat_theme.tres")
 const BOARD = preload("res://scripts/board/board_model.gd")
@@ -13,11 +16,15 @@ const ENEMY_STAGE = preload("res://scripts/ui/enemy_stage.gd")
 const METER = preload("res://scripts/ui/segmented_meter.gd")
 const INVENTORY = preload("res://scripts/ui/inventory_grid.gd")
 const RUN_INVENTORY = preload("res://scripts/combat/run_inventory.gd")
+const SIDE_FRACTION: float = 0.21875
 signal board_resolved(result: BOARD.SwapResult)
 signal state_presented
 signal next_encounter_requested
 @export var board_seed: int = 1
 @export var debug_match_logging: bool = true
+# Existing prototype identity, configurable by a future character-data owner.
+@export var hero_class_label: String = "Warden"
+@export var hero_level: int = 1
 var feedback: Label
 var turn_label: Label
 var board: BOARD
@@ -40,6 +47,12 @@ var ap_meter: METER
 var defense_meter: METER
 var inventory: INVENTORY
 var hero_portrait: Control
+var hero_frame: HERO_FRAME
+var consumables_belt: BELT
+var inventory_bag: BAG
+var crafting_popup: CRAFTING_POPUP
+var loadout_column: VBoxContainer
+var combat_footer: HBoxContainer
 var board_grid: GridContainer
 var board_frame: CenterContainer
 var art_clearance: Control
@@ -78,17 +91,17 @@ func _ready() -> void:
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
-	_build_hero(_column(0.0, 0.2))
-	_build_center(_column(0.2, 0.8))
-	_build_loadout(_column(0.8, 1.0))
+	_build_hero(_column(0.0, SIDE_FRACTION, "RelicHeroPanel"))
+	_build_center(_column(SIDE_FRACTION, 1.0 - SIDE_FRACTION, "RelicCenterPanel"))
+	_build_loadout(_column(1.0 - SIDE_FRACTION, 1.0, "RelicLoadoutPanel"))
 	_sync_state()
 	resized.connect(_resize_presentation)
 	_resize_presentation.call_deferred()
 
 
-func _column(left: float, right: float) -> VBoxContainer:
+func _column(left: float, right: float, variant: String) -> VBoxContainer:
 	var panel := PanelContainer.new()
-	panel.theme_type_variation = "RelicHeroPanel" if left == 0.0 else ("RelicCenterPanel" if left == 0.2 else "RelicLoadoutPanel")
+	panel.theme_type_variation = variant
 	add_child(panel)
 	panel.anchor_left = left
 	panel.anchor_right = right
@@ -120,14 +133,6 @@ func _health(parent: Node) -> ProgressBar:
 	return bar
 
 
-func _portrait(parent: Node, is_enemy: bool, height: float) -> Control:
-	var portrait := ACTOR_VIEW.new()
-	portrait.enemy = is_enemy
-	portrait.custom_minimum_size = Vector2(0, height)
-	parent.add_child(portrait)
-	return portrait
-
-
 func _placeholder(parent: Node, copy: String) -> void:
 	var button := Button.new()
 	button.text = copy
@@ -139,15 +144,20 @@ func _placeholder(parent: Node, copy: String) -> void:
 
 func _build_hero(column: VBoxContainer) -> void:
 	_label(column, "THE OATHBOUND", 18)
-	hero_portrait = _portrait(column, false, 320)
-	_label(column, "Ser Aldric", 24)
-	_label(column, "WARDEN  /  LEVEL 01")
+	hero_frame = HERO_FRAME.new()
+	hero_frame.custom_minimum_size.y = 350
+	hero_frame.set_identity(hero_class_label, hero_level)
+	column.add_child(hero_frame)
+	hero_portrait = hero_frame.actor_view
 	hero_hp_label = _label(column, "")
 	hero_hp_bar = _health(column)
 	defense_label = _label(column, "", 15)
 	defense_meter = METER.new()
 	defense_meter.defense = true
 	column.add_child(defense_meter)
+	ap_label = _label(column, "", 14)
+	ap_meter = METER.new()
+	column.add_child(ap_meter)
 	var statuses := HBoxContainer.new()
 	statuses.alignment = BoxContainer.ALIGNMENT_CENTER
 	column.add_child(statuses)
@@ -160,9 +170,6 @@ func _build_hero(column: VBoxContainer) -> void:
 		badge.tooltip_text = "No additional status effects" if caption == "—" else caption
 		statuses.add_child(badge)
 		status_icons.append(badge)
-	ap_label = _label(column, "", 14)
-	ap_meter = METER.new()
-	column.add_child(ap_meter)
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(spacer)
@@ -198,12 +205,30 @@ func _build_center(column: VBoxContainer) -> void:
 			tiles.append(tile)
 			board_grid.add_child(tile)
 			tile.pressed.connect(_on_tile_pressed.bind(row * 7 + col))
-	turn_label = _label(column, "BOARD MOVE 00  /  SELECT TWO ADJACENT TILES", 16)
-	feedback = _label(column, "Sword / Shield / Herb / Action  •  Seed %d" % board_seed, 14)
+	var footer_frame := PanelContainer.new()
+	footer_frame.theme_type_variation = "RelicCombatFooter"
+	column.add_child(footer_frame)
+	combat_footer = HBoxContainer.new()
+	combat_footer.add_theme_constant_override("separation", 8)
+	footer_frame.add_child(combat_footer)
+	var footer_info := VBoxContainer.new()
+	footer_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	footer_info.add_theme_constant_override("separation", 2)
+	combat_footer.add_child(footer_info)
+	turn_label = _label(footer_info, "", 14)
+	turn_label.clip_text = true
+	feedback = _label(footer_info, "Sword / Shield / Herb / Action  •  Seed %d" % board_seed, 13)
 	# Long cascade reports must not push the three columns beyond the viewport.
 	feedback.clip_text = true
-	feedback.custom_minimum_size.y = 26
+	feedback.custom_minimum_size.y = 23
 	feedback.mouse_filter = Control.MOUSE_FILTER_PASS
+	end_turn_button = Button.new()
+	end_turn_button.text = "End Turn"
+	end_turn_button.custom_minimum_size = Vector2(160, 40)
+	end_turn_button.size_flags_vertical = Control.SIZE_SHRINK_END
+	end_turn_button.tooltip_text = "After your swap, finish the turn and let the enemy act."
+	end_turn_button.pressed.connect(_on_end_turn_pressed)
+	combat_footer.add_child(end_turn_button)
 
 
 func _bind_primary_enemy() -> void:
@@ -222,12 +247,24 @@ func _resize_presentation() -> void:
 		return
 	# Allocate the remaining central height to an integer-sized square board.
 	enemy_stage.custom_minimum_size.y = floorf(maxf(128, size.y * 0.178))
-	hero_portrait.custom_minimum_size.y = floorf(maxf(320, size.y * 0.445))
+	hero_frame.custom_minimum_size.y = floorf(maxf(350, size.y * 350.0 / 720.0))
 	var available_height: float = size.y - 24 - 16 - 22 - enemy_stage.custom_minimum_size.y - art_clearance.custom_minimum_size.y - 26 - 23 - 12
-	var available_width: float = size.x * 0.6 - 32
+	var available_width: float = size.x * (1.0 - 2.0 * SIDE_FRACTION) - 32
 	var side: float = floorf((minf(available_height, available_width) - 24) / 7.0)
 	for tile: Button in tiles:
 		tile.custom_minimum_size = Vector2.ONE * maxf(40, side)
+	_place_crafting_popup.call_deferred()
+
+
+func _place_crafting_popup() -> void:
+	if is_instance_valid(crafting_popup) and is_instance_valid(consumables_belt):
+		var allowed: Rect2 = (loadout_column.get_parent() as Control).get_global_rect().grow(-12)
+		crafting_popup.place_near_belt(consumables_belt.get_global_rect(), allowed)
+
+
+func _toggle_crafting_popup() -> void:
+	_place_crafting_popup()
+	crafting_popup.toggle_open()
 
 
 func _preview_ap(cost: int) -> void:
@@ -411,11 +448,9 @@ func _sync_state() -> void:
 	status_icons[1].tooltip_text = "Ward: %d. Persists until consumed or combat ends." % state.ward
 	status_icons[0].modulate = Color.WHITE if state.guard > 0 else Color("53606A")
 	status_icons[1].modulate = Color.WHITE if state.ward > 0 else Color("53606A")
-	herbs_label.text = "Herbs %d / Bandages %d" % [state.run_inventory.herbs, state.run_inventory.bandages]
-	budget_label.text = "Herb budget left  %d" % state.herb_budget
-	inventory.set_quantity("herb", state.run_inventory.herbs)
-	inventory.set_quantity("bandage", state.run_inventory.bandages)
-	use_bandage_button.text = "Use Bandage ×%d / 2 AP" % state.run_inventory.bandages
+	inventory_bag.set_summary(state.run_inventory.herbs, state.run_inventory.bandages, state.herb_budget)
+	consumables_belt.set_quantity(state.run_inventory.bandages, RULES.BANDAGE_AP_COST)
+	crafting_popup.set_quantities(state.run_inventory.herbs, state.run_inventory.bandages)
 	intent_label.text = "Attack for %d damage" % state.enemy_intent if not state.is_finished() else "Combat ended"
 	intent_label.tooltip_text = intent_label.text
 	turn_label.text = "TURN %02d / %s" % [state.turn, STATE.Phase.keys()[state.phase].replace("_", " ")]
@@ -431,6 +466,7 @@ func _refresh(values: Array[int]) -> void:
 
 
 func _build_loadout(column: VBoxContainer) -> void:
+	loadout_column = column
 	_label(column, "EQUIPMENT", 18)
 	var equipment := GridContainer.new()
 	equipment.columns = 3
@@ -456,42 +492,39 @@ func _build_loadout(column: VBoxContainer) -> void:
 	column.add_child(shield_bash_button)
 	ability_previews.append(shield_bash_button)
 	_placeholder(column, "Ability II / Locked")
-	end_turn_button = Button.new()
-	end_turn_button.text = "End Turn"
-	end_turn_button.tooltip_text = "After your swap, finish the turn and let the enemy act."
-	end_turn_button.pressed.connect(_on_end_turn_pressed)
-	column.add_child(end_turn_button)
 	if combat.developer_tools_enabled:
 		debug_undo_button = Button.new()
+		debug_undo_button.theme_type_variation = "CompactButton"
 		debug_undo_button.text = "DEBUG / Undo Last Turn"
 		debug_undo_button.add_theme_font_size_override("font_size", 13)
 		debug_undo_button.tooltip_text = "Developer only. Restore the state before the last turn's first valid action. One checkpoint; no redo."
 		debug_undo_button.pressed.connect(_on_debug_undo_pressed)
 		column.add_child(debug_undo_button)
 	_label(column, "CONSUMABLES", 16)
-	craft_bandage_button = Button.new()
-	craft_bandage_button.text = "Craft Bandage / 6 Herbs"
-	craft_bandage_button.add_theme_font_size_override("font_size", 14)
-	craft_bandage_button.tooltip_text = "Emergency crafting: consume 6 Herbs to make 1 Bandage. No AP cost."
+	consumables_belt = BELT.new()
+	column.add_child(consumables_belt)
+	use_bandage_button = consumables_belt.use_button
+	consumables_belt.hammer_button.pressed.connect(_toggle_crafting_popup)
+	crafting_popup = CRAFTING_POPUP.new()
+	add_child(crafting_popup)
+	craft_bandage_button = crafting_popup.craft_button
+	craft_bandage_button.text = "Craft Bandage / %d Herbs" % RULES.BANDAGE_EMERGENCY_HERBS
+	craft_bandage_button.tooltip_text = "Emergency crafting: consume %d Herbs to make 1 Bandage. No AP cost." % RULES.BANDAGE_EMERGENCY_HERBS
 	craft_bandage_button.pressed.connect(_on_craft_bandage_pressed)
-	column.add_child(craft_bandage_button)
-	use_bandage_button = Button.new()
-	use_bandage_button.add_theme_font_size_override("font_size", 14)
-	use_bandage_button.tooltip_text = "Use 1 Bandage to restore up to 12 HP. Costs 2 AP. Unavailable at full HP."
+	use_bandage_button.tooltip_text = "Use 1 Bandage to restore up to %d HP. Costs %d AP. Unavailable at full HP." % [RULES.BANDAGE_HEAL, RULES.BANDAGE_AP_COST]
 	use_bandage_button.mouse_entered.connect(_preview_ap.bind(RULES.BANDAGE_AP_COST))
 	use_bandage_button.mouse_exited.connect(_preview_ap.bind(0))
 	use_bandage_button.focus_entered.connect(_preview_ap.bind(RULES.BANDAGE_AP_COST))
 	use_bandage_button.focus_exited.connect(_preview_ap.bind(0))
 	use_bandage_button.pressed.connect(_on_use_bandage_pressed)
-	column.add_child(use_bandage_button)
 	_label(column, "INVENTORY", 16)
-	inventory = INVENTORY.new()
-	column.add_child(inventory)
+	inventory_bag = BAG.new()
+	column.add_child(inventory_bag)
+	inventory = inventory_bag.inventory
 	inventory.set_entries([
 		{"id": "herb", "name": "Herb bundle", "description": "Collected herbs. Materials only; no automatic healing.", "texture": preload("res://assets/tiles/herb.png"), "quantity": 0},
 		{"id": "bandage", "name": "Bandage", "description": "Bandage: up to 12 HP for 2 AP. Emergency recipe: 6 Herbs.", "glyph": "BND", "quantity": 0}
 	])
-	herbs_label = _label(column, "", 14)
-	herbs_label.theme_type_variation = "RelicFooter"
-	budget_label = _label(column, "", 14)
-	budget_label.theme_type_variation = "RelicFooter"
+	herbs_label = inventory_bag.herbs_label
+	budget_label = inventory_bag.budget_label
+	column.resized.connect(_place_crafting_popup.call_deferred)
