@@ -58,11 +58,13 @@ rule or mandatory wait in the existing board resolver.
 
 ## Reusable native UI styling
 
-`scenes/ui/combat_theme.tres` extracts the existing native panel/button/HP style:
-charcoal, ash brown, deep iron, cold/worn steel, old copper, dried blood and bone.
-It supplies no fonts or final artwork. A screen may use a duplicated Theme when
-local overrides are needed. Layout dimensions and resource calculations remain
-owned by their existing components.
+`scenes/ui/combat_theme.tres` now instantiates the Forest Relic v2 Theme adapter.
+It uses the supplied panel/button/slot/HP/segment artwork while retaining compact
+native styles for board/status controls and the existing Ward overlay. See
+[FOREST_RELIC_UI.md](FOREST_RELIC_UI.md) for source mapping, nine-slice margins,
+frame-only panel limitations and render checks. No fonts or final artwork are
+generated. A screen duplicates the Theme for local overrides; layout dimensions
+and resource calculations remain owned by their existing components.
 
 ## Future asset integration checklist
 

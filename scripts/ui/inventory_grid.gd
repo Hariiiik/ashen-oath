@@ -70,6 +70,7 @@ func set_entries(entries: Array[Dictionary]) -> void:
 
 func _cell() -> PanelContainer:
 	var cell := PanelContainer.new()
+	cell.theme_type_variation = "RelicInventorySlot"
 	cell.custom_minimum_size = Vector2(58, 58)
 	cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.add_child(cell)

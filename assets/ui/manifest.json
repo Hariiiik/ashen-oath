@@ -1,0 +1,108 @@
+{
+  "name": "Ashen Oath — Forest Relic UI pack v2",
+  "notes": [
+    "Sprite art only. No Godot scenes, scripts or themes modified.",
+    "Generated concept-to-asset extraction: review visual fit and pixel edges before production integration.",
+    "The source atlas has a baked light checkerboard background; background was removed via image processing. Inspect individual transparency at 100%.",
+    "Existing combat board tiles are intentionally excluded.",
+    "Panels and buttons are candidates for StyleBoxTexture with 9-slice margins; margins must be determined after inspecting the actual sprite at intended scale."
+  ],
+  "files": [
+    {
+      "path": "panels/hero_panel.png",
+      "width": 184,
+      "height": 421,
+      "alpha": true
+    },
+    {
+      "path": "panels/center_panel.png",
+      "width": 499,
+      "height": 289,
+      "alpha": true
+    },
+    {
+      "path": "panels/loadout_panel.png",
+      "width": 159,
+      "height": 417,
+      "alpha": true
+    },
+    {
+      "path": "panels/portrait_frame.png",
+      "width": 235,
+      "height": 246,
+      "alpha": true
+    },
+    {
+      "path": "buttons/button_normal.png",
+      "width": 302,
+      "height": 116,
+      "alpha": true
+    },
+    {
+      "path": "buttons/button_hover.png",
+      "width": 306,
+      "height": 116,
+      "alpha": true
+    },
+    {
+      "path": "buttons/button_pressed.png",
+      "width": 300,
+      "height": 111,
+      "alpha": true
+    },
+    {
+      "path": "buttons/button_disabled.png",
+      "width": 302,
+      "height": 116,
+      "alpha": true
+    },
+    {
+      "path": "slots/inventory_slot.png",
+      "width": 185,
+      "height": 185,
+      "alpha": true
+    },
+    {
+      "path": "slots/equipment_slot.png",
+      "width": 184,
+      "height": 182,
+      "alpha": true
+    },
+    {
+      "path": "meters/health_trough.png",
+      "width": 326,
+      "height": 71,
+      "alpha": true
+    },
+    {
+      "path": "meters/health_fill.png",
+      "width": 326,
+      "height": 69,
+      "alpha": true
+    },
+    {
+      "path": "meters/segment_empty.png",
+      "width": 169,
+      "height": 170,
+      "alpha": true
+    },
+    {
+      "path": "meters/segment_ap.png",
+      "width": 96,
+      "height": 98,
+      "alpha": true
+    },
+    {
+      "path": "meters/segment_guard.png",
+      "width": 98,
+      "height": 98,
+      "alpha": true
+    },
+    {
+      "path": "panels/label_plate.png",
+      "width": 327,
+      "height": 87,
+      "alpha": true
+    }
+  ]
+}

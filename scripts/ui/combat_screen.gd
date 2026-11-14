@@ -70,10 +70,11 @@ func _ready() -> void:
 	combat.diagnostics_enabled = debug_match_logging
 	board = combat.board
 	theme = COMBAT_THEME.duplicate(true) as Theme
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	visual_queue = VISUAL_QUEUE.new()
 	add_child(visual_queue)
 	var background := ColorRect.new()
-	background.color = Color("101116")
+	background.color = Color("161515")
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
@@ -87,6 +88,7 @@ func _ready() -> void:
 
 func _column(left: float, right: float) -> VBoxContainer:
 	var panel := PanelContainer.new()
+	panel.theme_type_variation = "RelicHeroPanel" if left == 0.0 else ("RelicCenterPanel" if left == 0.2 else "RelicLoadoutPanel")
 	add_child(panel)
 	panel.anchor_left = left
 	panel.anchor_right = right
@@ -151,6 +153,7 @@ func _build_hero(column: VBoxContainer) -> void:
 	column.add_child(statuses)
 	for caption: String in ["G", "W", "—"]:
 		var badge := Button.new()
+		badge.theme_type_variation = "CompactButton"
 		badge.text = caption
 		badge.add_theme_font_size_override("font_size", 12)
 		badge.custom_minimum_size = Vector2(34, 30)
@@ -163,7 +166,7 @@ func _build_hero(column: VBoxContainer) -> void:
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(spacer)
-	_label(column, "Prototype balance", 13)
+	_label(column, "Prototype balance", 13).theme_type_variation = "RelicFooter"
 
 
 func _build_center(column: VBoxContainer) -> void:
@@ -190,6 +193,7 @@ func _build_center(column: VBoxContainer) -> void:
 	for row: int in range(7):
 		for col: int in range(7):
 			var tile := TILE_SCENE.instantiate() as Button
+			tile.theme_type_variation = "BoardTileButton"
 			tile.set("tile_kind", board.cells[row * 7 + col])
 			tiles.append(tile)
 			board_grid.add_child(tile)
@@ -433,6 +437,7 @@ func _build_loadout(column: VBoxContainer) -> void:
 	column.add_child(equipment)
 	for slot: String in ["Weapon", "Armor", "Helmet", "Amulet", "Ring I", "Ring II"]:
 		var button := Button.new()
+		button.theme_type_variation = "RelicEquipmentSlot"
 		button.text = {"Weapon": "Wpn", "Armor": "Arm", "Helmet": "Hel", "Amulet": "Amu", "Ring I": "R1", "Ring II": "R2"}[slot]
 		button.custom_minimum_size = Vector2(62, 34)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -487,4 +492,6 @@ func _build_loadout(column: VBoxContainer) -> void:
 		{"id": "bandage", "name": "Bandage", "description": "Bandage: up to 12 HP for 2 AP. Emergency recipe: 6 Herbs.", "glyph": "BND", "quantity": 0}
 	])
 	herbs_label = _label(column, "", 14)
+	herbs_label.theme_type_variation = "RelicFooter"
 	budget_label = _label(column, "", 14)
+	budget_label.theme_type_variation = "RelicFooter"
