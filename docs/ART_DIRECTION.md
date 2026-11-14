@@ -7,6 +7,15 @@ guidance in the earlier `ART_STYLE_GUIDE.md` draft. It changes no gameplay rules
 
 ## Primary reference
 
+**Current combat UI composition source of truth:**
+[`ui-reference.png`](references/art/ui-reference.png), supplied and approved for
+the combat UI rework. Its framed portrait/plaque, joined meters, separate enemy
+art/info, board/footer, belt and bag hierarchy supersedes earlier UI composition
+measurements. Mockup resource numbers and illustrated items add no game rules.
+The character illustrations are not separate production sprite assets. See
+[COMBAT_UI_REFERENCE_REWORK.md](COMBAT_UI_REFERENCE_REWORK.md) for implementation
+and remaining art gaps; the earlier sheet below remains the overall material guide.
+
 Intended reference location: `docs/references/art/forest_rust_iron_reference.png`.
 That exact filename was absent when this document was prepared. The supplied
 sheet inspected in the project is
@@ -186,7 +195,8 @@ clear without introducing new tile types or deferred special tiles.
 - Dark iron panels, weathered borders and restrained rust/bronze accents. Use
   modest ornament where it supports hierarchy; avoid decorative golden frames.
 - Dirty parchment may support lore or text surfaces, with wear kept away from
-  essential text. Do not replace the combat layout with the concept sheet layout.
+  essential text. Use the current approved UI reference for composition; the
+  earlier concept sheet is a material guide, not a technical screen specification.
 - Readable typography and functional indicators take precedence over historical
   styling. Font choice and specific frame designs remain unapproved. Render
   user-facing copy in English through the game UI rather than baking text into art.
