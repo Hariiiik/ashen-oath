@@ -2,7 +2,13 @@
 
 Open `scenes/combat/combat_screen.tscn` in Godot 4 and press **F6**.
 Alternatively: `godot --path . res://scenes/combat/combat_screen.tscn`.
-The existing foundation boot scene remains available through F5.
+F5 now starts `scenes/run/run_entry.tscn`: three repeats of the existing test
+encounter, using this same combat view. **Next Encounter** replaces End Turn
+after a nonfinal victory; continuation is explicit. HP and Herbs/Bandages persist
+without automatic healing/crafting. Guard/Ward and provisionally AP reset.
+The last victory shows **Run Complete**. Debug Undo remains available until
+explicit continuation, then starts fresh for the next encounter. F6 on the
+standalone combat scene still launches one fresh encounter.
 
 ## Emergency crafting and Bandage (Milestone 4B)
 

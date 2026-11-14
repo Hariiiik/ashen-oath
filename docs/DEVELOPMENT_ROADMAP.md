@@ -1,7 +1,9 @@
 # Development Roadmap
 
-Reviewed: 2026-11-13 against HEAD `b7f9727`, the uncommitted Milestone 4B Bandage
-implementation and the latest recorded validation. Checked items describe implemented/verified work; prototype
+Reviewed: 2026-11-14 against clean baseline `81e649f` and the verified
+parallel equipment/run/presentation integration, grouped into thematic commits
+for user-authorized publication. Bandage and emergency crafting
+were already committed at that baseline. Checked items describe implemented/verified work; prototype
 completion does not approve final balance or production artwork. Unverified setup
 items remain unchecked. See `SESSION_HANDOFF.md` for the current checkpoint.
 
@@ -39,7 +41,7 @@ Status: complete as a minimal single-encounter prototype; balance remains provis
 - [x] Diagnostics/Undo regression coverage (157 checks passed). These tools are not the planned full combat analytics/balancing milestone.
 
 ## Milestone 3 — Combat UI
-Status: static/presentation slice implemented and validated; animation/polish and manual acceptance remain pending.
+Status: presentation slice and reusable actor infrastructure implemented and validated; authored animations/polish and manual acceptance remain pending.
 
 - [x] Three zones: enlarged hero portrait, central enemy stage and board, compact equipment/ability/consumable/inventory areas.
 - [x] Extensible EnemyStage with 1–3 visual slots; only one combat enemy, no targeting or multi-enemy logic.
@@ -49,10 +51,11 @@ Status: static/presentation slice implemented and validated; animation/polish an
 - [x] Layout and rendered checks at 1280x720 and 1920x1080; 354 presentation checks passed, including all 49 unobstructed board pointer targets.
 - [ ] Manual player acceptance/playtest of readability, hover behavior, pacing and outcome feedback.
 - [ ] Individual final asset approval; tile/hero/enemy/UI artwork remains provisional.
-- [ ] Animation/polish that never blocks interaction. No new animation work was authorized in the presentation refactor; current clear/refill snapshot playback remains.
+- [x] Reusable ActorView/visual Resource, native fallback, shared theme and optional animation queue with skip/cancel/missing-clip safety; actor suite 44 checks passed.
+- [ ] Authored animation content/polish and its future timing integration. Current board clear/refill playback remains unchanged; infrastructure does not apply effects or advance turns.
 
 ## Milestone 4 — Light RPG
-Status: partially implemented through Milestones 4A and 4B; equipment effects and broader RPG content remain outside the current slice. Only Bandage item use is implemented; there is no loot system.
+Status: partially implemented through Milestones 4A and 4B and equipment data contracts; equipment effects and broader RPG content remain outside the current slice. Only Bandage item use is implemented; there is no loot system.
 
 ### Milestone 4A — Shield Bash
 
@@ -65,14 +68,43 @@ Status: partially implemented through Milestones 4A and 4B; equipment effects an
 The Shield Bash slice implements only the expressly approved ability rules;
 it does not complete the whole Light RPG milestone or approve another ability.
 
-- [ ] 1-2 abilities, early gear modifiers, data-driven content (requires separately scoped design/implementation work).
-- Later crafting/consumable work follows the GDD: run-persistent herbs, normal between-battle crafting, increased-cost emergency crafting, manual healing item activation using shared ability/consumable AP. Bandage material costs are 4/6 herbs; healing and activation AP amounts remain provisional. Crafting AP cost is an unapproved proposal. No implementation is requested now.
+### Milestone 4B — Emergency Crafting & Bandage
+
+- [x] Existing Bandage: emergency recipe 6 Herbs, zero crafting AP; manual use consumes one Bandage and provisional 2 AP for up to provisional 12 HP.
+- [x] Shared RunInventory Herb/Bandage stacks, action-window gates, AP preview and Undo restoration; Bandage suite 62 checks passed.
+- [ ] Manual acceptance of resource economy, full-HP rejection and action-window usability.
+
+The standard 4-Herb recipe is a design reference only. Preparation is intended
+between runs, not automatically between rooms. No standard/between-battle crafting,
+Preparation Screen, Hub, safe rooms or meta-inventory has been implemented.
+
+### Equipment data contracts — approved parallel slice
+
+- [x] Static definitions and inert future modifier descriptors, prototype slot compatibility, runtime loadout and atomic in-memory snapshot/restore; equipment suite 52 checks passed.
+- [x] Actual loadout object persists across the integrated run without affecting combat calculations.
+- [ ] Final equipment slots/content/bonuses, effect interpretation and equipment interaction UI require separately approved work. No loot or additional active ability is implemented.
+
+## Milestone 5 — Simple Run
+
+Status: **minimal sequential run prototype implemented and tested; broader run milestone incomplete**.
+
+- [x] Explicit three-encounter test sequence reusing the existing Sentinel and combat engine; independent deterministic encounter seeds.
+- [x] Persistent current HP/max HP, same RunInventory and equipment-loadout identity; no victory healing. Fresh Guard/Ward and provisional AP reset per encounter.
+- [x] F5 run entry, explicit Next Encounter after victory, derived final victory/defeat result; no automatic crafting or preparation.
+- [x] Current-encounter Undo until accepted advance, no cross-encounter Undo; run suite 85 checks passed and integrated UI regression passed at both supported sizes.
+- [ ] Manual acceptance of the complete three-fight loop, defeat, final victory and Undo.
+- [ ] Room selection/content, rewards, boss, procedural progression and disk saving remain future scoped work; this prototype does not approve or implement them.
+
+The three repeats are verification content, not final run length or enemy variety.
+There is no Hub, safe room, meta-inventory or automatic after-fight Preparation Screen.
 
 ## Milestone 6 — Combat Balance & Playtesting
 
-Status: **PLANNED / NOT STARTED**. Future combat evaluation after the core
-encounter/Shield Bash slice and before expanding into the simple run. Existing
-milestone numbers are preserved. This plan authorizes no implementation or
+Status: **PLANNED / NOT STARTED**. Full balancing begins only after core RPG
+mechanics, crafting, equipment interactions and the basic run loop are playable.
+The equipment data model alone does not satisfy these prerequisites. Until then,
+address only critical balance problems and obvious gameplay exploits during development.
+Positioned after Milestone 5; existing numbering is preserved. This plan authorizes no implementation or
 balance changes now; all work below remains pending.
 
 ### Combat analytics
@@ -111,15 +143,19 @@ the approved 3 AP Shield Bash cost remain unchanged.
 
 ## Next review gate
 
-Manually playtest the current combat scene at 1280x720 and a larger 16:9 window:
+Manually playtest the F5 run and standalone F6 combat scene at 1280x720 and a larger 16:9 window:
 Shield Bash, emergency Bandage crafting/use, live stacks/AP previews, post-match
 End Turn and DEBUG Undo. Verify naturally collected Herbs/AP and resource limits.
 Record usability findings, critical balance issues or obvious exploits, then scope
 the next task; defer routine tuning/full balancing to Milestone 6.
 The next planned art task remains individual design/approval of Sword, Shield,
 Herb and Action tiles; current PNG integration does not finalize those designs.
-Do not begin Milestone 4 or multi-enemy combat solely because UI placeholders exist.
+Verify explicit continuation, persistent HP/stacks, provisional AP reset, final
+result and current-encounter Undo. Do not add equipment bonuses, new enemies or
+other future systems solely because their data/UI extension points now exist.
 
-Each milestone must be independently runnable and committed before expansion.
+Each slice must be independently runnable and verified. The user has authorized
+thematic commits and push for this integration; later publication still requires
+authorization.
 
 Fatigue remains outside the MVP and may only be considered in later anti-stalling tests. Keep extension points for future classes, loot, crafting and a Hub without building those systems in the current documentation/UI work.

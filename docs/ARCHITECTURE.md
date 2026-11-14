@@ -1,5 +1,5 @@
 # Technical Architecture — Ashen Oath
-Version 0.1 — foundation, Godot 4 / typed GDScript wherever practical.
+Version 0.2 — combat, equipment data contracts, minimal run and actor presentation.
 
 ## Goals
 Readable single-player code, fast iteration, deterministic battle logic, editable content without deep rewrites, no unnecessary dependencies.
@@ -44,7 +44,8 @@ signal and must not be used to apply the effects a second time. It now completes
 board playback before the post-match decision, not the whole combat turn.
 Shield Bash, emergency Bandage crafting/use and End Turn are functional action
 buttons. No standard/between-battle crafting, other items/abilities, equipment
-modifiers or full run controller are implemented.
+modifiers are implemented. A minimal run owner now injects the existing controller
+into this same view; standalone F6 still creates a fresh encounter.
 Prototype constants and launch/test commands are in `COMBAT_UI_PROTOTYPE.md`;
 these testing values do not finalize the GDD's open balance decisions.
 
@@ -66,7 +67,7 @@ scripts/characters/class_definition.gd
 - `BoardModel`: 7x7 grid, exactly Sword/Shield/Herb/Action base tile ids and seedable RNG, no Godot UI references. Match-4/5 effects resolve immediately, without deferred special tiles.
 - `CombatState`: hero HP/stats, temporary Guard (expires after the next enemy action), finite Ward pool (until consumed or combat ends), shared consumable/ability AP, enemy HP/stats/intent, turn phase, board state and remaining encounter herb budget. AP never grants additional swaps.
 - `CombatRules`: integer formulas, effect order, damage/healing/Guard/Ward caps. Herb matches collect materials within the encounter budget, never heal, and keep resolving without materials after exhaustion; Herb tiles stay on the board. Healing item activation is manual and costs AP. Unresolved balance and Herb/Action special rewards stay unspecified.
-- `RunState` (later): seed, map progress, run-persistent herb materials, rewards, unlocks; no hub assumption.
+- `RunState`: run seed, explicit encounter sequence/seeds, current index, HP checkpoints, existing shared RunInventory and optional equipment-loadout reference. No map, rewards, unlocks or Hub.
 - `ItemDefinition`/`AbilityDefinition` (later): static content definitions, with separate runtime state for cooldowns/uses.
 
 Keep definitions extensible for future classes, loot and crafting; the MVP has only Warden. The only implemented recipe is emergency Bandage crafting for 6 Herbs and no AP. Standard recipe cost is 4 Herbs, but its availability is future preparation between runs or special crafting/safe rooms, not automatic between-battle access. No preparation, safe-room or Hub system is implemented. See the GDD for approved rules and provisional balance. Fatigue is outside the MVP.
@@ -86,8 +87,37 @@ construct controllers with `Combat.new(seed, shared_inventory)`, or assign
 `combat_screen.run_inventory` before adding the scene to the tree. Each encounter
 uses that same `RunInventory` object; a new standalone scene without injection
 creates a fresh one. `RunInventory` owns no encounter phase, HP or AP. No automatic
-encounter transition or post-victory screen is introduced. Inventory adapters
+encounter transition or preparation screen is introduced. Inventory adapters
 display both live quantities; Bandage uses a native BND placeholder glyph.
+
+## Integrated parallel modules
+
+- Equipment: `scripts/equipment/` separates static Resource definitions/inert
+  modifier descriptors from runtime slot assignments. No evaluator, bonuses or
+  real item catalog. See [EQUIPMENT_SYSTEM.md](EQUIPMENT_SYSTEM.md).
+- Run: `scripts/run/` owns the existing CombatController and shared inventory,
+  independent encounter seeds, HP checkpoints and optional loadout. CombatState
+  remains authoritative during combat; HP is transferred only on an accepted
+  explicit transition. Guard/Ward reset; AP resets provisionally. A derived
+  RunResult is revoked automatically when Debug Undo revokes an outcome.
+  Retired controllers cannot Undo into another encounter's shared inventory.
+  See [RUN_ARCHITECTURE.md](RUN_ARCHITECTURE.md).
+- Entry: `scripts/core/run_entry.gd` / `scenes/run/run_entry.tscn` is the F5 main
+  scene. It injects `.combat` before CombatScreen enters the tree and reuses the
+  End Turn position as **Next Encounter** after nonfinal victory, or disabled
+  **Run Complete** after final victory. Deferred transitions revalidate the live
+  phase, so Undo can revoke a queued request. No automatic transition or healing.
+- Art: ActorVisualDefinition, ActorView and CombatVisualQueue are presentation
+  only. Warden and EnemyStage share native fallback views and nearest filtering.
+  Optional clips/queue can complete, skip or cancel without applying combat
+  effects. CombatScreen cancels its queue before Undo; tree exit cancels on
+  disposal. Existing board playback/timing is unchanged; authored action
+  animations are not wired into turn resolution. The shared Theme is
+  `scenes/ui/combat_theme.tres`. See [ART_PIPELINE.md](ART_PIPELINE.md).
+
+Cross-stream tests: `tests/integration/parallel_streams_test.gd` verifies real UI
+actions, controller/inventory/loadout identity, turn flow, Undo/transition races,
+final result revocation, both layout sizes and all board pointer targets.
 
 ## State and input safety
 States: `PLAYER_INPUT`, `RESOLVING_BOARD`, `RESOLVING_EFFECTS`, `POST_MATCH`, `ENEMY_ACTION`, `VICTORY`, `DEFEAT`. Board swaps are accepted only during `PLAYER_INPUT`. Shield Bash is accepted during `PLAYER_INPUT` or `POST_MATCH`, with Guard > 0 and at least 3 AP. All input actions validate phase; do not allow animation callbacks to create extra turns. Mark transitions explicitly.

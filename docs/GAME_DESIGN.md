@@ -1,5 +1,5 @@
 # Ashen Oath — Game Design Document (GDD)
-Version: 0.4 (approved combat tiles, Shield Bash and emergency Bandage crafting). Status: **rules below are approved where marked; unresolved balance values and future ideas remain provisional.** This document specifies intended behavior, not implemented gameplay.
+Version: 0.5 (approved combat rules and first-run persistence clarification). Status: **rules below are approved where marked; unresolved balance values and future ideas remain provisional.** Implementation boundaries are recorded in the architecture and roadmap.
 
 ## High concept
 A single-player Windows PC grimdark pixel-art roguelite. The player fights monstrous enemies with a turn-based hybrid Match-3 board, class abilities and equipment. Runs are self-contained; future unlocks and a hub may be added later, without being part of the initial MVP.
@@ -82,14 +82,23 @@ Match-3 activates the basic tile effect. Match-4/5 activates an immediate specia
 - Check victory immediately after damage; a kill prevents retaliation. Invalid activation changes no combat state.
 - The first ability slot is Shield Bash; the second stays locked. Post-match **End Turn** explicitly closes the ability window and permits the enemy action. End Turn is unavailable before the board move.
 
-## Equipment (future)
+## Equipment (data contracts implemented; effects future)
 - Potential slots: weapon, armor, helmet, amulet, two rings.
 - Gear modifies tile effects, stats and later triggers synergies.
 - Item effects must be resolved by game logic, never by UI scripts.
 - Rarity and curses are concepts, not final balance specifications.
+- The prototype implements definitions, slot compatibility and a run-owned loadout only. It adds no item catalog, bonuses, loot or combat modifiers. The six UI slots are prototype identifiers, not finalized equipment design. See [EQUIPMENT_SYSTEM.md](EQUIPMENT_SYSTEM.md).
 
 ## Run loop (later milestone)
 Enter run as Warden → select room → battle/event/reward → next room/boss → death/completion → unlocks → new run. Class selection is a future extension when additional classes are approved.
+
+### First playable run prototype (approved persistence)
+
+- Current HP and max HP persist between encounters; victory does not restore HP.
+- Herbs and Bandages persist through the existing run-owned `RunInventory`; the equipment loadout also retains its identity. No equipment effects are implemented.
+- Guard and Ward reset to zero for each encounter. AP resets to zero as a **provisional implementation rule**, not a permanent approved design decision.
+- Continuation after victory is explicit. No automatic crafting or preparation between fights, Hub, safe rooms or meta-inventory.
+- The implementation uses three repetitions of the existing test encounter as a verification sequence. This does not approve final run length, new enemies, room selection, rewards, procedural generation, bosses or unlocks. See [RUN_ARCHITECTURE.md](RUN_ARCHITECTURE.md).
 
 ## Scope boundaries
 ### First playable slice
