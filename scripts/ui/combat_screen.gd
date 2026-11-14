@@ -2,7 +2,9 @@ extends Control
 ## Combat presentation only. Rules and turn transitions belong to the controller.
 
 const TILE_SCENE: PackedScene = preload("res://scenes/ui/board_tile.tscn")
-const PORTRAIT = preload("res://scripts/ui/placeholder_portrait.gd")
+const ACTOR_VIEW = preload("res://scripts/ui/actor_view.gd")
+const VISUAL_QUEUE = preload("res://scripts/ui/combat_visual_queue.gd")
+const COMBAT_THEME: Theme = preload("res://scenes/ui/combat_theme.tres")
 const BOARD = preload("res://scripts/board/board_model.gd")
 const COMBAT = preload("res://scripts/combat/combat_controller.gd")
 const STATE = preload("res://scripts/combat/combat_state.gd")
@@ -12,6 +14,8 @@ const METER = preload("res://scripts/ui/segmented_meter.gd")
 const INVENTORY = preload("res://scripts/ui/inventory_grid.gd")
 const RUN_INVENTORY = preload("res://scripts/combat/run_inventory.gd")
 signal board_resolved(result: BOARD.SwapResult)
+signal state_presented
+signal next_encounter_requested
 @export var board_seed: int = 1
 @export var debug_match_logging: bool = true
 var feedback: Label
@@ -50,15 +54,24 @@ var use_bandage_button: Button
 # The run owner can inject the same object into each encounter scene before _ready.
 # A standalone F6 launch creates a fresh run inventory; no global/meta inventory.
 var run_inventory: RUN_INVENTORY
+# Optional run-owner injection. Standalone F6 keeps the original encounter path.
+var run_managed: bool = false
+var encounter_caption: String = "ASHEN OATH  /  THE HOLLOW CRYPT"
+var visual_queue: VISUAL_QUEUE
 
 
 func _ready() -> void:
-	if run_inventory == null:
-		run_inventory = RUN_INVENTORY.new()
-	combat = COMBAT.new(board_seed, run_inventory)
+	if combat == null:
+		if run_inventory == null:
+			run_inventory = RUN_INVENTORY.new()
+		combat = COMBAT.new(board_seed, run_inventory)
+	else:
+		run_inventory = combat.state.run_inventory
 	combat.diagnostics_enabled = debug_match_logging
 	board = combat.board
-	theme = _make_theme()
+	theme = COMBAT_THEME.duplicate(true) as Theme
+	visual_queue = VISUAL_QUEUE.new()
+	add_child(visual_queue)
 	var background := ColorRect.new()
 	background.color = Color("101116")
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -70,33 +83,6 @@ func _ready() -> void:
 	_sync_state()
 	resized.connect(_resize_presentation)
 	_resize_presentation.call_deferred()
-
-
-func _style(fill: String, border: String) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(fill)
-	style.border_color = Color(border)
-	style.set_border_width_all(2)
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
-	return style
-
-
-func _make_theme() -> Theme:
-	var result := Theme.new()
-	result.default_font_size = 16
-	result.set_color("font_color", "Label", Color("C8B89A"))
-	result.set_stylebox("panel", "PanelContainer", _style("161515", "44484A"))
-	result.set_stylebox("normal", "Button", _style("26211E", "53606A"))
-	result.set_stylebox("hover", "Button", _style("2F3438", "A1693D"))
-	result.set_stylebox("pressed", "Button", _style("2F4A34", "87919A"))
-	result.set_stylebox("disabled", "Button", _style("26211E", "44484A"))
-	result.set_color("font_disabled_color", "Button", Color("8E7D62"))
-	result.set_stylebox("background", "ProgressBar", _style("161515", "44484A"))
-	result.set_stylebox("fill", "ProgressBar", _style("6A2E2A", "8A4A32"))
-	return result
 
 
 func _column(left: float, right: float) -> VBoxContainer:
@@ -133,9 +119,8 @@ func _health(parent: Node) -> ProgressBar:
 
 
 func _portrait(parent: Node, is_enemy: bool, height: float) -> Control:
-	var portrait := Control.new()
-	portrait.set_script(PORTRAIT)
-	portrait.set("enemy", is_enemy)
+	var portrait := ACTOR_VIEW.new()
+	portrait.enemy = is_enemy
 	portrait.custom_minimum_size = Vector2(0, height)
 	parent.add_child(portrait)
 	return portrait
@@ -184,7 +169,7 @@ func _build_hero(column: VBoxContainer) -> void:
 func _build_center(column: VBoxContainer) -> void:
 	center_column = column
 	column.add_theme_constant_override("separation", 2)
-	_label(column, "ASHEN OATH  /  THE HOLLOW CRYPT", 18)
+	_label(column, encounter_caption, 18)
 	enemy_stage = ENEMY_STAGE.new()
 	enemy_stage.custom_minimum_size.y = 128
 	column.add_child(enemy_stage)
@@ -315,7 +300,9 @@ func _on_tile_pressed(index: int) -> void:
 	resolving = false
 	_sync_state()
 	if combat.state.phase == STATE.Phase.VICTORY:
-		feedback.text = "VICTORY — The Hollow Sentinel has fallen. F6 to play again."
+		feedback.text = "VICTORY — The Hollow Sentinel has fallen."
+		if not run_managed:
+			feedback.text += " F6 to play again."
 	elif combat.state.phase == STATE.Phase.DEFEAT:
 		feedback.text = "DEFEAT — Your oath ends here. F6 to try again."
 	feedback.tooltip_text = feedback.text
@@ -338,6 +325,9 @@ func _on_shield_bash_pressed() -> void:
 
 
 func _on_end_turn_pressed() -> void:
+	if run_managed and not resolving and combat.state.phase == STATE.Phase.VICTORY:
+		next_encounter_requested.emit()
+		return
 	if resolving or not combat.end_turn():
 		return
 	resolving = true
@@ -387,7 +377,10 @@ func _sync_action_availability() -> void:
 
 
 func _on_debug_undo_pressed() -> void:
-	if resolving or not combat.debug_undo_last_turn():
+	if resolving or not combat.can_debug_undo():
+		return
+	visual_queue.cancel()
+	if not combat.debug_undo_last_turn():
 		return
 	selected = -1
 	moves = combat.state.valid_swaps
@@ -423,6 +416,7 @@ func _sync_state() -> void:
 	intent_label.tooltip_text = intent_label.text
 	turn_label.text = "TURN %02d / %s" % [state.turn, STATE.Phase.keys()[state.phase].replace("_", " ")]
 	_sync_action_availability()
+	state_presented.emit()
 
 
 func _refresh(values: Array[int]) -> void:
