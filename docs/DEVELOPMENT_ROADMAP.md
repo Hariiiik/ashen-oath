@@ -1,9 +1,9 @@
 # Development Roadmap
 
-Reviewed: 2026-11-14 against clean baseline `81e649f` and the verified
-parallel equipment/run/presentation integration, grouped into thematic commits
-for user-authorized publication. Bandage and emergency crafting
-were already committed at that baseline. Checked items describe implemented/verified work; prototype
+Reviewed: 2026-11-14 against baseline `89296e7` (Forest Relic integration) and the
+verified approved-reference UI rework through `1855000`, grouped for user-authorized thematic
+commits and push. Earlier equipment/run/ability/crafting work is already committed.
+Checked items describe implemented/verified work; prototype
 completion does not approve final balance or production artwork. Unverified setup
 items remain unchecked. See `SESSION_HANDOFF.md` for the current checkpoint.
 
@@ -16,7 +16,8 @@ Status: project foundation complete; some account/repository setup details unver
 - [x] Specialist agent role guides
 - [x] Import and run locally in Godot (headless validation and rendered UI checks in Godot 4.7.2)
 - [x] Create local Git repository and first commit (existing history verified)
-- [ ] Verify private GitHub repository visibility and initial push status; local `origin/main` exists, but remote visibility was not checked
+- [x] Publish project commits to configured `origin/main`; local/remote history and prior pushes verified
+- [ ] Verify private GitHub repository visibility separately; privacy settings were not queried
 - [ ] Confirm local Codex login/setup if still needed; not independently verified during this review
 
 ## Milestone 1 — Board prototype
@@ -41,16 +42,23 @@ Status: complete as a minimal single-encounter prototype; balance remains provis
 - [x] Diagnostics/Undo regression coverage (157 checks passed). These tools are not the planned full combat analytics/balancing milestone.
 
 ## Milestone 3 — Combat UI
-Status: presentation slice and reusable actor infrastructure implemented and validated; authored animations/polish and manual acceptance remain pending.
+Status: functional approved-reference layout and reusable presentation implemented and validated; final artwork, authored animations/polish and manual player acceptance remain pending. Not pixel-perfect or production-art complete.
 
 - [x] Three zones: enlarged hero portrait, central enemy stage and board, compact equipment/ability/consumable/inventory areas.
 - [x] Extensible EnemyStage with 1–3 visual slots; only one combat enemy, no targeting or multi-enemy logic.
 - [x] Safe artwork clearance, enlarged square board, compact status tooltips, segmented AP hover previews and layered Guard/Ward presentation without an Armor mechanic.
 - [x] Scrollable inventory view with live Herb/Bandage stacks; Bandage is the only implemented consumable. No loot system.
 - [x] Forest / Rust / Iron direction documented; temporary native UI and provisional PNG tiles integrated.
+- [x] Inspect and record approved `docs/references/art/ui-reference.png` as the current UI composition source of truth; source-specific audit and missing-art requirements documented.
+- [x] Framed hero portrait with integrated class/level plaque, no standalone name; joined continuous AP/Guard/Ward meters preserve all resource calculations.
+- [x] Separate enemy artwork/info frames with 32px lower artwork allowance inside the existing safe clearance; no new enemy or targeting logic.
+- [x] End Turn/Next Encounter shares the central footer below the unchanged board, aligned bottom-right.
+- [x] Shared temporary native leather bag/belt, existing inventory counts/scrolling, and nonmodal crafting popup using the single existing recipe handler. Popup remains in the right column and leaves board, Bash and Undo accessible.
+- [x] Full regression: 16 headless suites, 3,629 counted checks plus combat UI smoke PASS. New component suites: hero 23, enemy 401, loadout 26; reference integration 252. Native reference capture 154 and HP rendering 142 checks passed.
 - [x] Layout and rendered checks at 1280x720 and 1920x1080; 354 presentation checks passed, including all 49 unobstructed board pointer targets.
 - [ ] Manual player acceptance/playtest of readability, hover behavior, pacing and outcome feedback.
-- [ ] Individual final asset approval; tile/hero/enemy/UI artwork remains provisional.
+- [ ] Final Warden/enemy illustrations, ruins backdrop, thick stone columns/ledge, authored bag/belt/buckle, pixel hammer, Ward treatment and typography. Native silhouettes/leather/tool glyph remain explicit placeholders; source PNGs were not regenerated.
+- [ ] Individual final tile asset approval; existing four tile textures remain unchanged and provisional.
 - [x] Reusable ActorView/visual Resource, native fallback, shared theme and optional animation queue with skip/cancel/missing-clip safety; actor suite 44 checks passed.
 - [ ] Authored animation content/polish and its future timing integration. Current board clear/refill playback remains unchanged; infrastructure does not apply effects or advance turns.
 
@@ -72,6 +80,7 @@ it does not complete the whole Light RPG milestone or approve another ability.
 
 - [x] Existing Bandage: emergency recipe 6 Herbs, zero crafting AP; manual use consumes one Bandage and provisional 2 AP for up to provisional 12 HP.
 - [x] Shared RunInventory Herb/Bandage stacks, action-window gates, AP preview and Undo restoration; Bandage suite 62 checks passed.
+- [x] Existing crafting/use exposed through the reference-layout belt/popup, preserving 6-Herb/zero crafting AP and provisional 2-AP/12-HP usage. This is UI integration, not a new crafting milestone or recipe.
 - [ ] Manual acceptance of resource economy, full-HP rejection and action-window usability.
 
 The standard 4-Herb recipe is a design reference only. Preparation is intended
@@ -146,16 +155,23 @@ the approved 3 AP Shield Bash cost remain unchanged.
 Manually playtest the F5 run and standalone F6 combat scene at 1280x720 and a larger 16:9 window:
 Shield Bash, emergency Bandage crafting/use, live stacks/AP previews, post-match
 End Turn and DEBUG Undo. Verify naturally collected Herbs/AP and resource limits.
+Keep the hammer popup open while swapping and using Bash/Undo; check it stays in
+the right column, does not cover active combat controls, and keeps craft/use
+actions disabled at the appropriate phases. Check portrait plaque, joined meters, bag scrolling and
+the relocated End Turn/Next Encounter button against the approved reference.
 Record usability findings, critical balance issues or obvious exploits, then scope
 the next task; defer routine tuning/full balancing to Milestone 6.
-The next planned art task remains individual design/approval of Sword, Shield,
-Herb and Action tiles; current PNG integration does not finalize those designs.
+After manual acceptance, scope the missing art from `UI_REFERENCE_ASSET_AUDIT.md`;
+do not generate or implement it without the next explicit task. Sword, Shield,
+Herb and Action individual design approval remains pending; the reference does
+not finalize those provisional tile assets.
 Verify explicit continuation, persistent HP/stacks, provisional AP reset, final
 result and current-encounter Undo. Do not add equipment bonuses, new enemies or
 other future systems solely because their data/UI extension points now exist.
 
-Each slice must be independently runnable and verified. The user has authorized
-thematic commits and push for this integration; later publication still requires
-authorization.
+Each slice must be independently runnable and verified. The user explicitly
+authorized this session's final handoff, roadmap update, thematic commits and
+push. Use Git history/status for publication state; later publication still
+requires authorization.
 
 Fatigue remains outside the MVP and may only be considered in later anti-stalling tests. Keep extension points for future classes, loot, crafting and a Hub without building those systems in the current documentation/UI work.

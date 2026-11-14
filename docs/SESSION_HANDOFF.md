@@ -1,175 +1,210 @@
-# Ashen Oath — Session handoff
+# Ashen Oath — Final session handoff
 
-## Current checkpoint — 2026-11-14, approved parallel integration
+## Checkpoint — 2026-11-14, approved-reference combat UI
 
-Baseline: `main`, HEAD `81e649f453cdf0b9f43201a7b5ae9c1b26546ef8`.
-The baseline was clean. Shield Bash, Bandage, emergency crafting, RunInventory,
-Match-3 and DEBUG Undo were already implemented/committed; none was reimplemented.
-The previous handoff's `b7f9727`/uncommitted-Bandage description was stale.
+Implementation baseline: `main`, `89296e7` — Forest Relic UI integration. The
+reference rework began with only the supplied `docs/references/art/ui-reference.png`
+untracked. Existing equipment/run, Shield Bash, Bandage, emergency crafting,
+Match-3 and Debug Undo were already implemented and committed; none was rewritten.
 
-The equipment/run/presentation integration and relevant documentation are
-**implemented and tested**. The implementation checkpoint was uncommitted;
-the user's subsequent request explicitly authorizes thematic commits and a push
-to GitHub. Publication groups: equipment contracts, run architecture, actor
-presentation infrastructure, shared integration and project documentation.
-Use `git log`, `git status` and `origin/main` for the current publication state.
-No installations or final art generation were performed.
+The user has explicitly authorized this final handoff/roadmap update, thematic
+commits and push to `origin/main`. Publication groups are reference/art audit,
+hero/meters, enemy frames, belt/bag/crafting popup, shared integration, and final
+roadmap/handoff. Use `git log`, `git status` and `origin/main` for final SHA/sync
+state rather than an embedded self-referential commit hash.
 
-## Playable state and launch
+Implementation commits in this publication:
 
-Godot 4.7.2, GL Compatibility, Windows-first, nearest filtering, baseline 1280x720.
-F5 now opens `scenes/run/run_entry.tscn`: three explicit repeats of the existing
-Hollow Sentinel test encounter. F6 on `scenes/combat/combat_screen.tscn` still
-starts one fresh standalone encounter. The old foundation title scene remains
-in the repository, but is no longer the configured main scene.
+- `defd710` — approved reference and art audit.
+- `6b31f12` — framed hero and joined resource meters.
+- `759f151` — separate enemy artwork/information frames.
+- `1e62946` — consumable belt, inventory bag and crafting popup.
+- `1855000` — shared combat layout, documentation and regression integration.
 
-- One Warden, exactly Sword/Shield/Herb/Action on the existing seeded 7x7 board.
-- Adjacent swaps, invalid rollback, matches, gravity/refill, cascades and dead-board
-  reshuffling remain unchanged. Intersecting straight runs merge unique cells;
-  rank is their longest straight run, capped at Match-5+. No new T/L policy.
-- One valid swap per turn. After cascades, the board locks in POST_MATCH. Existing
-  Shield Bash, emergency craft and Bandage actions work before/after the swap;
-  explicit End Turn permits the announced alternating 5/8 enemy attack.
-- No deferred special tiles, new enemy logic, balance changes or extra abilities.
-- Three combat zones, 80px artwork clearance, 52px tiles at 1280x720 and 94px at
-  1920x1080 remain. Warden/enemy visuals are replaceable native placeholders;
-  provisional tile PNGs were not edited.
+The following final documentation commit contains this handoff and the roadmap.
 
-## Completed work by worker and lead
+The functional layout is implemented and tested. **Final artwork and manual
+player acceptance remain incomplete**; do not claim pixel-perfect reproduction.
+No final art, installations, dependencies, gameplay rules or balance changes were
+introduced. The reference PNG and existing source textures were preserved.
 
-Native Codex workers A/B/C ran in isolated detached worktrees, all created from
-the same clean baseline. Their source ownership did not overlap. Lead reviewed
-and integrated **A → B → C**, then changed shared presentation/entry/docs only.
+## Restore context and launch
 
-- **A — Equipment:** static Resource definitions, six prototype slot identifiers,
-  compatibility checks, run-owned loadout assignments, copied mapping snapshots
-  and atomic restore. Inert future modifier descriptors only. No item catalog,
-  actual bonuses, modifier evaluator, loot or equipment interaction UI.
-- **B — Run:** node-independent state/controller/encounter metadata/result;
-  explicit continuation, independent seeded encounter boards, persistent HP and
-  shared inventory/loadout, outcome/Undo safeguards. No new combat engine.
-- **C — UI/art:** ActorVisualDefinition, ActorView scene, texture/SpriteFrames
-  fallback, nearest proportional fit, optional clip queue/skip/cancel, shared
-  Forest / Rust / Iron Theme; EnemyStage retains its public live-state API.
-- **Lead integration:** actual equipment loadout injected into run; existing
-  CombatController injected into CombatScreen; End Turn becomes Next Encounter
-  only after nonfinal victory, or disabled Run Complete at final victory. A
-  deferred transition rechecks live phase so Undo can revoke a queued request.
-  Queue cancellation precedes UI Undo. No new mandatory animation wait.
+Read AGENTS.md, GAME_DESIGN.md, ARCHITECTURE.md, ART_DIRECTION.md and
+DEVELOPMENT_ROADMAP.md before extending the project. Current UI details live in
+COMBAT_UI_REFERENCE_REWORK.md; asset inspection/gaps are in
+UI_REFERENCE_ASSET_AUDIT.md. FOREST_RELIC_UI.md retains the earlier sprite
+integration checkpoint and source crops; its older layout statements are
+superseded by the reference rework.
 
-## Approved boundaries and provisional values
+Godot 4.7.2 / typed GDScript, Windows-first, GL Compatibility, nearest filtering.
+F5 starts `scenes/run/run_entry.tscn`: three explicit repetitions of the existing
+Hollow Sentinel encounter with deterministic separate board seeds. F6 on
+`scenes/combat/combat_screen.tscn` starts one fresh standalone encounter. The
+actual combat scene is in `scenes/combat/`, not `scenes/ui/`.
 
-Current HP/max HP persist without victory healing. Herbs/Bandages keep the same
-existing RunInventory object; loadout identity persists without effects. Guard
-and Ward reset at every new encounter. **AP resets to zero provisionally**, not
-as a permanent approved design rule. Encounter budget/turn/intent reset through
-the existing combat defaults.
+## Current playable project state
 
-CombatState owns live HP; RunState HP is a transition checkpoint only. Do not
-mirror live HP into another authority or cache terminal results: Undo can revoke
-victory/defeat. RunResult is derived from the current actual phase. Advancing
-disables debug tools on the retired controller; old snapshots cannot restore
-shared inventory across encounters. Current-encounter Undo remains usable after
-victory/defeat until explicit advance. There is one checkpoint, no redo/history.
+- One Warden, one combat enemy, exactly Sword/Shield/Herb/Action on the existing
+  seeded 7x7 board. Adjacent swaps, invalid rollback, match groups, gravity/refill,
+  cascades, stable generation and dead-board reshuffling are unchanged.
+- Intersecting straight runs merge unique cells. Rank is the longest straight
+  run, capped at Match-5+. No new T/L/cross policy or deferred special tiles.
+- One valid swap per turn; invalid swaps spend nothing. All cascades/effects
+  finish before POST_MATCH. Shield Bash, emergency craft and Bandage work in the
+  existing pre-swap/post-match windows. Explicit End Turn permits the announced
+  alternating 5/8 attack; lethal effects prevent retaliation.
+- End Turn now sits at the central footer's bottom-right. The same button becomes
+  Next Encounter after nonfinal victory or disabled Run Complete at final victory.
+  No automatic transition, healing or preparation follows victory.
+- Equipment has definitions, compatibility/loadout/snapshot contracts only.
+  Loadout identity persists without bonuses, loot or equipment interactions.
+- Existing actor visual definitions, optional queue/skip/cancel and one-turn Undo
+  remain; no authored animations were added or wired into new turn waits.
 
-Shield Bash stays approved at 3 AP, consuming all Guard for equal physical base
-damage, no Ward contribution, swap cost, cooldown or new bonuses. Guard absorbs
-before Ward before HP; remaining Guard expires after enemy action.
+## Approved-reference UI
 
-Emergency crafting stays 6 Herbs → 1 Bandage, zero crafting AP. Manual use costs
-provisional 2 AP for provisional up-to-12 HP; full-HP use is blocked. The standard
-4-Herb recipe remains design-only. Preparation is intended between runs, not
-automatically after rooms. No preparation screen, Hub, safe rooms, meta-inventory,
-standard/between-battle crafting or additional consumables were added.
+The lead and four native Codex workers inspected the actual
+`docs/references/art/ui-reference.png`. They used disjoint source ownership in
+the shared workspace; no new worktrees were created for this UI task.
 
-Tile testing values are unchanged: Sword 6/12/18; Shield 6 Guard/8 Ward/12 Ward;
-Herb 1/2/3 capped by encounter budget; Action 2/3/5 capped at 6 AP. Prototype hero
-100 HP, enemy 40 HP, herb budget 10. These do not finalize GDD balance/rewards.
-Three repeated encounters are test content, not approved final run length.
+- Hero worker: new HeroPortrait wrapper with existing ActorView, dedicated
+  supplied frame and bottom WARDEN / LVL 01 plaque. Standalone Ser Aldric/name
+  label removed. `hero_class_label`/`hero_level` are configurable presentation
+  inputs for the existing identity, not a new class/XP system. Guard/Ward and AP
+  use joined full-width plates, fixed caps and one-pixel dividers.
+- Enemy worker: separate artwork and name/HP/intent frames, preserving legacy
+  primary bindings and 1–3 visual-only preview slots. ActorView may extend 32px
+  below its frame into the 80px clearance. All decoration ignores pointer input;
+  no artwork reaches board cells. No goblin or multi-enemy mechanics were added.
+- Inventory worker: same grid/API/data/58px minimum cells/scrolling, now grouped
+  in a shared temporary native leather bag. A matching belt contains Bandage and
+  two inert future slots. Its tool button toggles contextual crafting.
+- Art worker: all sixteen UI PNGs inspected; reusable frames, source limitations,
+  state hierarchy and final art requirements documented.
+- Lead: approximately 22/56/22 columns, portrait and meter bindings, footer action,
+  unified components, Theme focus/footer styles, actual run-scene integration
+  tests and native visual QA. Original board sizes and positions are retained.
 
-## Verification on the integrated root
+| Measurement | 1280x720 | 1920x1080 |
+| --- | --- | --- |
+| Board position/size | (446,260), 388x388 | (619,324), 682x682 |
+| Tile hitbox | 52x52 | 94x94 |
+| Hero frame | 248x350 | 388x525 |
+| End Turn position/size | (824,657), 160x40 | (1324,1015), 160x40 |
 
-| Suite | Result |
+CraftingPopup is a **nonmodal Control**, not a paused scene or fullscreen input
+catcher. It stays in the right column, preferring the read-only bag area below
+the belt so Bash, Undo and belt controls stay accessible. Above is a limited-space
+fallback. It may remain open through swaps, enemy actions, Undo and outcomes;
+gameplay buttons still obey normal availability. Close/toggle remains usable.
+
+The screen aliases its single craft button to the existing craft handler. There
+is no duplicate recipe or resource mutation path. UI cost strings come from
+CombatRules. Existing Bandage use remains the single active belt consumable.
+
+## Rules and persistence to preserve
+
+HP/max HP persist between encounters without victory healing. Herbs/Bandages use
+the same RunInventory instance; equipment retains the same loadout reference.
+Guard/Ward reset each encounter. **AP resets to zero provisionally**, not as a
+permanent approved design rule. Budget, turn, intent and enemy HP reset normally.
+CombatState is authoritative during combat; RunState HP is a transition checkpoint.
+
+Shield Bash remains approved at 3 AP, consuming all Guard for equal physical base
+damage. No Ward contribution, swap cost, cooldown, bonus or arbitrary per-turn cap.
+Guard absorbs before Ward before HP; remaining Guard expires after enemy action.
+
+Emergency crafting remains 6 Herbs -> 1 Bandage with zero crafting AP. Manual use
+costs provisional 2 AP for provisional up-to-12 HP, capped at max; full-HP use is
+blocked. The standard 4-Herb recipe is design-only. Preparation is intended between
+runs, not automatically after rooms. No Hub, safe rooms, meta-inventory, standard/
+between-battle crafting, additional items or recipes exist.
+
+Unchanged prototype values: Sword 6/12/18; Shield 6 Guard/8 Ward/12 Ward; Herb
+1/2/3 capped by encounter budget; Action 2/3/5 capped at 6 AP. Hero 100 HP, enemy
+40 HP, herb budget 10. These do not finalize balance or open GDD special rewards.
+
+Developer-only Debug Undo restores one pre-turn board/RNG/scalar-state/inventory
+checkpoint without replaying effects. It is blocked during resolution, allowed
+after victory/defeat, and cancels presentation first. It cannot cross encounters;
+accepted continuation retires the old controller's debug tools. Derived run results
+and continuation availability immediately follow actual phase after Undo.
+
+## Executed verification
+
+All sixteen headless suites rerun for publication: **3,629 counted checks,
+zero failures**, plus combat UI smoke PASS.
+
+| Suite | Checks/result |
 | --- | --- |
-| board_model_test | 1,151 checks, 0 failures |
-| combat_test | 583 checks, 0 failures |
-| shield_bash_test | 167 checks, 0 failures |
-| debug_turn_test | 157 checks, 0 failures |
-| bandage_test | 62 checks, 0 failures |
-| equipment/equipment_test | 52 checks, 0 failures |
-| run/run_test | 85 checks, 0 failures |
-| ui/actor_view_test | 44 checks, 0 failures |
-| presentation_smoke | 354 checks, 0 failures at 1280x720 and 1920x1080 |
-| combat_ui_smoke | PASS: layout, input, swaps, actions, retaliation, victory/defeat |
-| integration/parallel_streams_test | 166 checks, 0 failures at both sizes |
-| Godot headless editor | exit 0, no project errors |
-| Configured F5 main scene, headless launch | exit 0, no project errors |
+| board_model_test | 1,151 / 0 failures |
+| combat_test | 583 / 0 |
+| shield_bash_test | 167 / 0 |
+| debug_turn_test | 157 / 0 |
+| bandage_test | 62 / 0 |
+| equipment/equipment_test | 52 / 0 |
+| run/run_test | 85 / 0 |
+| ui/actor_view_test | 44 / 0 |
+| presentation_smoke | 354 / 0, both resolutions/all 49 pointer targets |
+| combat_ui_smoke | PASS: actions, layout, input locks, enemy action/outcomes |
+| integration/parallel_streams_test | 166 / 0 |
+| ui/forest_relic_smoke | 106 / 0 headless |
+| ui/hero_panel_test | 23 / 0 |
+| ui/enemy_stage_test | 401 / 0 |
+| ui/loadout_components_test | 26 / 0 |
+| ui/reference_layout_smoke | 252 / 0 |
 
-Integration additionally checks real UI crafting/use/Bash, HP/resources/Undo,
-loadout persistence, no automatic enemy action or encounter progression, no
-cross-room Undo, Undo revoking a queued advance/final result, presentation queue
-cancellation and all 49 board pointer targets in both sizes.
-
-A native OpenGL Compatibility integration run passed 164 checks before the final
-two queue-cancellation assertions were added; final headless integration passed
-166. Captures `.godot/run_1280x720.png` and `.godot/run_1920x1080.png` were viewed.
-Final code changed only standalone/run victory wording after that native capture;
-no layout or render change. Manual player acceptance is still pending.
-
-Early sandbox runs reported unavailable user log/certificate-store access; normal
-approved reruns used separate logs and passed without these errors. Logs live in
-ignored `build/parallel/*.log`; screenshots/cache remain ignored. This is not the
-future analytics/balancing system.
+Latest native visual QA from the implementation: reference UI **154 / 0** and HP
+rendering **142 / 0**, with captures viewed at both sizes. HP checks cover
+0/25/50/75/100% and fixed end-cap pixels. Editor validation passed with no new
+project errors/warnings. The reference integration uses actual F5 RunEntry and
+checks open-popup board input, existing craft/use costs, Undo, cascades, post-match
+actions, relocated End Turn and victory/continuation. Native capture mode excludes
+OS-window pointer dispatch; deterministic headless input covers all board cells.
 
 Commands: `godot --headless --path . --editor --quit` and
 `godot --headless --path . --script tests/<suite>.gd`.
 Local executable:
 `C:\Users\Hariiik\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe`.
-The integration harness also accepts `-- --capture` in a native-rendered run.
+Normal sandbox approval may be required for engine logs/certificate-store access;
+approved runs used separate logs without those environment errors.
 
-## Important files and ownership
+Ignored artifacts: `build/handoff_*.log`, `build/reference_*.log`, and
+`build/screenshots/ui_reference_{1280x720,1920x1080}.png` plus
+`ui_reference_crafting_{1280x720,1920x1080}.png`. Captures/logs are local artifacts,
+not committed final art; rerun the native reference harness to recreate them.
 
-- A: `scripts/equipment/{equipment_slots,equipment_definition,equipment_modifier,equipment_loadout}.gd`,
-  their UIDs, `tests/equipment/equipment_test.gd`, `docs/EQUIPMENT_SYSTEM.md`.
-- B: `scripts/run/{encounter_definition,run_state,run_result,run_controller}.gd`,
-  their UIDs, `tests/run/run_test.gd`, `docs/RUN_ARCHITECTURE.md`.
-- C: `scripts/ui/{actor_visual_definition,actor_view,combat_visual_queue}.gd`,
-  their UIDs, `scenes/ui/{actor_view.tscn,combat_theme.tres}`,
-  `tests/ui/actor_view_test.gd`, `docs/ART_PIPELINE.md`;
-  existing `enemy_stage.gd` and `placeholder_portrait.gd` changed.
-- Lead: `scripts/core/run_entry.gd` + UID, `scenes/run/run_entry.tscn`,
-  `tests/integration/parallel_streams_test.gd`, `scripts/ui/combat_screen.gd`,
-  `project.godot`, GDD/ARCHITECTURE/ROADMAP/COMBAT_UI_PROTOTYPE and this handoff.
-- Board algorithms, combat controller/rules/state, RunInventory, TurnSnapshot,
-  tile/enemy art, AGENTS.md and inventory/equipment UI behavior were preserved.
+## Important files and remaining work
 
-Worktrees remain for review at `build/parallel/agent-a`, `agent-b`, `agent-c`,
-detached at `81e649f`. `build/` is already ignored; parent `.gdignore` prevents
-Godot scanning these copies. Only owned source paths were copied into root;
-generated import/cache churn was excluded. Do not treat worktrees as commits or
-pushable branches. Do not delete the parent while registered worktrees remain;
-cleanup must use the normal explicit Git workflow when authorized.
+New UI scripts: hero_portrait.gd, consumables_belt.gd, crafting_popup.gd,
+inventory_bag.gd and UIDs. Modified: combat_screen.gd, enemy_stage.gd,
+segmented_meter.gd, inventory_grid.gd, forest_relic_theme.gd. New component/reference
+tests are under tests/ui/; existing presentation and skin assertions were updated
+to the newly approved layout. Shared design/architecture/art/UI docs reflect the
+new composition; detailed ownership/mapping is in COMBAT_UI_REFERENCE_REWORK.md.
+Board/combat/run/core scripts, tile textures and source UI artwork were preserved.
 
-## Roadmap, limitations and next action
+Milestone 3 is functionally implemented/verified, not final-art or manual-acceptance
+complete. 4A/4B remain implemented; equipment is data-only. Milestone 5 has the
+tested sequential slice, not room/reward/procedural/save content. Milestone 6
+stays PLANNED / NOT STARTED after 5, gated on playable core RPG/crafting/equipment
+interactions/basic run loop. Until then fix only critical balance issues/exploits.
 
-4A/4B remain implemented. Milestone 4 now includes equipment data contracts only;
-gear effects/content are still future. Milestone 5 has a tested sequential slice,
-not complete room/reward/procedural/save content. Milestone 6 is PLANNED / NOT
-STARTED **after Milestone 5**, with full balancing gated on playable core RPG,
-crafting, equipment interactions and basic run loop. Until then address only
-critical balance problems and obvious exploits. No analytics were implemented.
+Next recommended action: manually play F5 through all three encounters at both
+sizes with the popup open. Verify natural resource collection/craft/use, Bash,
+Undo, footer/Next Encounter, defeat/final victory, and HP/stack persistence. Record
+usability defects. Then scope approved art requirements separately.
 
-Next: manually play F5 through all three encounters at both sizes. Verify HP and
-stack carry-over, no healing/preparation between fights, resource resets, final
-outcome, defeat and Undo before/after victory. Record usability defects.
+Missing final art: Warden/enemy illustrations, ruins backdrop, thick stone
+columns/ledge, authored leather bag/belt/buckle, pixel hammer, Ward treatment and
+typography. Current silhouettes, thin supplied frames and matte leather are
+explicit placeholders. The tool glyph uses Segoe UI Symbol when available, with
+English Craft fallback; no font files are shipped. Individual tile approval,
+final equipment content/effects, run content/length/rewards, authored clip timing
+and permanent AP carry-over/balance decisions remain future approvals.
 
-Further approval is needed for final equipment slots/items/effects, final run
-content/length/rewards, final art and authored clips/timing, and permanent AP
-carry-over/balance decisions. The next art approval task remains the four tiles
-individually. No new design decision blocks the delivered prototype.
-
-Equipment snapshots intentionally retain read-only static Resource references;
-they are not deep backups or disk saves. Any future in-combat equipment mutation
-must explicitly extend Undo. Optional actor playback is infrastructure only;
-clips are not yet used to gate existing combat resolution. Use one playback owner
-per actor view. No save/resume, Hub, loot or procedural run system exists.
+Earlier linked worktrees under `build/parallel/agent-{a,b,c}` remain detached at
+`81e649f`, holding historical worker artifacts. They are ignored, not additional
+pending main-branch work, and must not be published. Do not delete their parent
+without proper Git worktree cleanup when authorized. No cleanup was performed.
